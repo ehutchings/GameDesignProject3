@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/ebitenui/ebitenui"
+	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/lafriks/go-tiled"
@@ -31,7 +33,16 @@ const (
 	TILE_HEIGHT = 64
 )
 
+type gameState int
+
+const (
+	gameStateStart = gameState(iota)
+	gameStatePlay
+)
+
 type mainGame struct {
+	state                   gameState
+	ui                      *ebitenui.UI
 	gameCursor              cursor
 	mapGrid                 grid
 	viewX, viewY, viewSpeed int
@@ -55,8 +66,8 @@ type tower struct {
 func (game *mainGame) Update() error {
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		cursorX, cursorY := ebiten.CursorPosition()
-		game.gameCursor.selectedBox = game.mapGrid.getGridBoxAtCursor(cursorX+game.viewX-WINDOW_WIDTH/2,
-			cursorY+game.viewY-WINDOW_HEIGHT/2)
+		game.gameCursor.x, game.gameCursor.y = cursorX+game.viewX-WINDOW_WIDTH/2, cursorY+game.viewY-WINDOW_HEIGHT/2
+		game.mapGrid.getGridBoxAtCursor(&game.gameCursor)
 		if game.gameCursor.selectedBox != nil {
 			fmt.Println(game.gameCursor.selectedBox.x, game.gameCursor.selectedBox.y)
 		}
@@ -83,15 +94,22 @@ func (game *mainGame) Update() error {
 	} else if game.viewY < WINDOW_HEIGHT/2 {
 		game.viewY = WINDOW_HEIGHT / 2
 	}
+	if game.state == gameStateStart {
+		game.ui.Update()
+	}
 	return nil
 }
 
 func (game *mainGame) Draw(screen *ebiten.Image) {
-	game.displayWorld.DrawImage(game.drawableStage1, game.drawOps)
-	game.drawOps.GeoM.Reset()
-	game.cameraView.Follow.H = game.viewY * 2
-	game.cameraView.Follow.W = game.viewX * 2
-	game.cameraView.Draw(game.displayWorld, screen)
+	if game.state == gameStateStart {
+		game.ui.Draw(screen)
+	} else {
+		game.displayWorld.DrawImage(game.drawableStage1, game.drawOps)
+		game.drawOps.GeoM.Reset()
+		game.cameraView.Follow.H = game.viewY * 2
+		game.cameraView.Follow.W = game.viewX * 2
+		game.cameraView.Draw(game.displayWorld, screen)
+	}
 }
 
 func (game *mainGame) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -107,7 +125,9 @@ func main() {
 	}
 	stage1Image := makeEbiteImagesFromMap(*stage1)
 	displayWorld := ebiten.NewImage(MAP_SIZE_X, MAP_SIZE_Y)
+	root := widget.NewContainer()
 	game := mainGame{
+		ui:             &ebitenui.UI{Container: root},
 		gameCursor:     cursor{selectedBox: nil},
 		mapGrid:        createGrid(),
 		viewX:          WINDOW_WIDTH / 2,

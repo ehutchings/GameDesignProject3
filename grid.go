@@ -42,12 +42,11 @@ func createGrid() grid {
 	return mapGrid
 }
 
-func (mapGrid grid) getGridBoxAtCursor(cursorX, cursorY int) *gridBox {
-	cursorCollider := resolv.NewRectangle(float64(cursorX), float64(cursorY), 1, 1)
+func (mapGrid grid) getGridBoxAtCursor(cursor *cursor) {
+	cursorCollider := resolv.NewRectangle(float64(cursor.x), float64(cursor.y), 1, 1)
 	for _, box := range mapGrid.gridBoxes {
 		if cursorCollider.IsContainedBy(box.collider) {
-			return &box
+			cursor.selectedBox = &box
 		}
 	}
-	return nil
 }
