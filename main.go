@@ -9,8 +9,8 @@ import (
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/lafriks/go-tiled"
-	"github.com/solarlune/resolv"
 	camera "github.com/tducasse/ebiten-camera"
 	"golang.org/x/image/font"
 )
@@ -32,6 +32,8 @@ const (
 )
 
 type mainGame struct {
+	gameCursor              cursor
+	mapGrid                 grid
 	viewX, viewY, viewSpeed int
 	cameraView              *camera.Camera
 	displayWorld            *ebiten.Image
@@ -50,17 +52,15 @@ type tower struct {
 	baseCostMod float64
 }
 
-type gridSquare struct {
-	x, y          int
-	width, height int
-	tower         tower
-	canBuild      bool
-	canPath       bool
-	tileType      string
-	collider      *resolv.ConvexPolygon
-}
-
 func (game *mainGame) Update() error {
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		cursorX, cursorY := ebiten.CursorPosition()
+		game.gameCursor.selectedBox = game.mapGrid.getGridBoxAtCursor(cursorX+game.viewX-WINDOW_WIDTH/2,
+			cursorY+game.viewY-WINDOW_HEIGHT/2)
+		if game.gameCursor.selectedBox != nil {
+			fmt.Println(game.gameCursor.selectedBox.x, game.gameCursor.selectedBox.y)
+		}
+	}
 	if ebiten.IsKeyPressed(ebiten.KeyW) {
 		game.viewY -= game.viewSpeed
 	}
@@ -83,7 +83,6 @@ func (game *mainGame) Update() error {
 	} else if game.viewY < WINDOW_HEIGHT/2 {
 		game.viewY = WINDOW_HEIGHT / 2
 	}
-	fmt.Println(game.viewX, game.viewY)
 	return nil
 }
 
@@ -109,6 +108,8 @@ func main() {
 	stage1Image := makeEbiteImagesFromMap(*stage1)
 	displayWorld := ebiten.NewImage(MAP_SIZE_X, MAP_SIZE_Y)
 	game := mainGame{
+		gameCursor:     cursor{selectedBox: nil},
+		mapGrid:        createGrid(),
 		viewX:          WINDOW_WIDTH / 2,
 		viewY:          WINDOW_HEIGHT / 2,
 		viewSpeed:      5,
@@ -137,8 +138,10 @@ func buildDrawableStage(game *mainGame) {
 			TileYpos := float64(game.stage1Map.TileHeight * tileY)
 			drawOptions.GeoM.Translate(TileXpos, TileYpos)
 			tileToDraw := game.stage1Map.Layers[0].Tiles[tileY*game.stage1Map.Width+tileX]
-			ebitenTileToDraw := game.stage1TileHash[tileToDraw.ID]
-			screen.DrawImage(ebitenTileToDraw, &drawOptions)
+			if tileToDraw.ID != 0 {
+				ebitenTileToDraw := game.stage1TileHash[tileToDraw.ID]
+				screen.DrawImage(ebitenTileToDraw, &drawOptions)
+			}
 		}
 	}
 }
