@@ -52,7 +52,7 @@ func LoadEmbeddedImage(folderName string, imageName string) *ebiten.Image {
 func makeEbiteImagesFromMap(tiledMap tiled.Map) map[uint32]*ebiten.Image {
 	idToImage := make(map[uint32]*ebiten.Image)
 	for _, tile := range tiledMap.Tilesets[0].Tiles {
-		tilePath := "tiles/" + tile.Image.Source
+		tilePath := tile.Image.Source
 		ebitenImageTile, _, err := ebitenutil.NewImageFromFile(tilePath)
 		if err != nil {
 			fmt.Println("Error loading tile image:", tilePath, err)

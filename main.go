@@ -10,6 +10,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/lafriks/go-tiled"
+	"github.com/solarlune/resolv"
 	camera "github.com/tducasse/ebiten-camera"
 	"golang.org/x/image/font"
 )
@@ -20,11 +21,14 @@ var EmbeddedAssets embed.FS
 const (
 	stage1Path = "stage1.tmx"
 
-	WINDOW_WIDTH  = 500
-	WINDOW_HEIGHT = 500
+	WINDOW_WIDTH  = 800
+	WINDOW_HEIGHT = 800
 
-	MAP_SIZE_X = 64 * 20
-	MAP_SIZE_Y = 64 * 20
+	MAP_SIZE_X = 64 * 25
+	MAP_SIZE_Y = 64 * 25
+
+	TILE_WIDTH  = 64
+	TILE_HEIGHT = 64
 )
 
 type mainGame struct {
@@ -36,6 +40,24 @@ type mainGame struct {
 	stage1TileHash          map[uint32]*ebiten.Image
 	drawOps                 *ebiten.DrawImageOptions
 	font                    font.Face
+}
+
+type tower struct {
+	spritesheet *ebiten.Image
+	x, y        int
+	baseDamage  int
+	rangeRadius int
+	baseCostMod float64
+}
+
+type gridSquare struct {
+	x, y          int
+	width, height int
+	tower         tower
+	canBuild      bool
+	canPath       bool
+	tileType      string
+	collider      *resolv.ConvexPolygon
 }
 
 func (game *mainGame) Update() error {
@@ -70,23 +92,7 @@ func (game *mainGame) Draw(screen *ebiten.Image) {
 	game.drawOps.GeoM.Reset()
 	game.cameraView.Follow.H = game.viewY * 2
 	game.cameraView.Follow.W = game.viewX * 2
-	game.lockCameraInBounds()
 	game.cameraView.Draw(game.displayWorld, screen)
-}
-
-func (game *mainGame) lockCameraInBounds() {
-	if game.cameraView.Follow.H < WINDOW_HEIGHT {
-		game.cameraView.Follow.H = WINDOW_HEIGHT
-	}
-	if game.cameraView.Follow.H > MAP_SIZE_Y*2-WINDOW_HEIGHT {
-		game.cameraView.Follow.H = MAP_SIZE_Y*2 - WINDOW_HEIGHT
-	}
-	if game.cameraView.Follow.W < WINDOW_WIDTH {
-		game.cameraView.Follow.W = WINDOW_WIDTH
-	}
-	if game.cameraView.Follow.W > MAP_SIZE_X*2-WINDOW_WIDTH {
-		game.cameraView.Follow.W = MAP_SIZE_X*2 - WINDOW_WIDTH
-	}
 }
 
 func (game *mainGame) Layout(outsideWidth, outsideHeight int) (int, int) {
