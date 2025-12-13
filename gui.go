@@ -18,10 +18,25 @@ func makeUI(game *mainGame) *widget.Container {
 	buttonPressedImage := LoadEmbeddedImage("", "uiButtonPressed.png")
 	rootContainer := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Padding(widget.NewInsetsSimple(100)),
 			widget.RowLayoutOpts.Direction(
 				widget.DirectionVertical,
 			),
+			widget.RowLayoutOpts.Spacing(5),
 		)))
+
+	buttonContainer := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout(
+			widget.AnchorLayoutOpts.Padding(widget.NewInsetsSimple(200)))))
+
+	basePriceInputLabel := widget.NewLabel(
+		widget.LabelOpts.LabelColor(&widget.LabelColor{
+			Idle:     colornames.White,
+			Disabled: colornames.Gray,
+		}),
+		widget.LabelOpts.LabelFace(&textFont))
+	basePriceInputLabel.Label = "Enter the base cost of your towers"
+
 	basePriceInput := widget.NewTextInput(
 		widget.TextInputOpts.Face(&textFont),
 		widget.TextInputOpts.Color(&widget.TextInputColor{
@@ -36,7 +51,21 @@ func makeUI(game *mainGame) *widget.Container {
 				Disabled:  image.NewNineSliceBorder(textInputImage, 20),
 				Highlight: image.NewNineSliceBorder(textInputImage, 20),
 			}),
-		widget.TextInputOpts.WidgetOpts(widget.WidgetOpts.MinSize(100, 22)))
+		widget.TextInputOpts.WidgetOpts(widget.WidgetOpts.MinSize(100, 30)),
+		widget.TextInputOpts.Padding(&widget.Insets{
+			Top:    5,
+			Bottom: 5,
+			Left:   10,
+			Right:  10,
+		}))
+
+	playerNameInputLabel := widget.NewLabel(
+		widget.LabelOpts.LabelColor(&widget.LabelColor{
+			Idle:     colornames.White,
+			Disabled: colornames.Gray,
+		}),
+		widget.LabelOpts.LabelFace(&textFont))
+	playerNameInputLabel.Label = "Please enter your name"
 
 	playerNameInput := widget.NewTextInput(
 		widget.TextInputOpts.Face(&textFont),
@@ -52,7 +81,13 @@ func makeUI(game *mainGame) *widget.Container {
 				Disabled:  image.NewNineSliceBorder(textInputImage, 20),
 				Highlight: image.NewNineSliceBorder(textInputImage, 20),
 			}),
-		widget.TextInputOpts.WidgetOpts(widget.WidgetOpts.MinSize(200, 22)))
+		widget.TextInputOpts.WidgetOpts(widget.WidgetOpts.MinSize(200, 30)),
+		widget.TextInputOpts.Padding(&widget.Insets{
+			Top:    5,
+			Bottom: 5,
+			Left:   10,
+			Right:  10,
+		}))
 
 	startGame := func(args *widget.ButtonClickedEventArgs) {
 		baseTowerCost, _ := strconv.ParseInt(basePriceInput.GetText(), 10, 64)
@@ -88,9 +123,12 @@ func makeUI(game *mainGame) *widget.Container {
 		}),
 		widget.ButtonOpts.WidgetOpts(widget.WidgetOpts.MinSize(200, 60)))
 
+	rootContainer.AddChild(basePriceInputLabel)
 	rootContainer.AddChild(basePriceInput)
+	rootContainer.AddChild(playerNameInputLabel)
 	rootContainer.AddChild(playerNameInput)
-	rootContainer.AddChild(button)
+	buttonContainer.AddChild(button)
+	rootContainer.AddChild(buttonContainer)
 	return rootContainer
 }
 
