@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"github.com/ebitenui/ebitenui"
-	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/lafriks/go-tiled"
@@ -41,6 +40,8 @@ const (
 )
 
 type mainGame struct {
+	name                    string
+	baseCost                int
 	state                   gameState
 	ui                      *ebitenui.UI
 	gameCursor              cursor
@@ -64,38 +65,39 @@ type tower struct {
 }
 
 func (game *mainGame) Update() error {
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		cursorX, cursorY := ebiten.CursorPosition()
-		game.gameCursor.x, game.gameCursor.y = cursorX+game.viewX-WINDOW_WIDTH/2, cursorY+game.viewY-WINDOW_HEIGHT/2
-		game.mapGrid.getGridBoxAtCursor(&game.gameCursor)
-		if game.gameCursor.selectedBox != nil {
-			fmt.Println(game.gameCursor.selectedBox.x, game.gameCursor.selectedBox.y)
-		}
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyW) {
-		game.viewY -= game.viewSpeed
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyS) {
-		game.viewY += game.viewSpeed
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyA) {
-		game.viewX -= game.viewSpeed
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyD) {
-		game.viewX += game.viewSpeed
-	}
-	if game.viewX > MAP_SIZE_X-WINDOW_WIDTH/2 {
-		game.viewX = MAP_SIZE_X - WINDOW_WIDTH/2
-	} else if game.viewX < WINDOW_WIDTH/2 {
-		game.viewX = WINDOW_WIDTH / 2
-	}
-	if game.viewY > MAP_SIZE_Y-WINDOW_HEIGHT/2 {
-		game.viewY = MAP_SIZE_Y - WINDOW_HEIGHT/2
-	} else if game.viewY < WINDOW_HEIGHT/2 {
-		game.viewY = WINDOW_HEIGHT / 2
-	}
 	if game.state == gameStateStart {
 		game.ui.Update()
+	} else if game.state == gameStatePlay {
+		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+			cursorX, cursorY := ebiten.CursorPosition()
+			game.gameCursor.x, game.gameCursor.y = cursorX+game.viewX-WINDOW_WIDTH/2, cursorY+game.viewY-WINDOW_HEIGHT/2
+			game.mapGrid.getGridBoxAtCursor(&game.gameCursor)
+			if game.gameCursor.selectedBox != nil {
+				fmt.Println(game.gameCursor.selectedBox.x, game.gameCursor.selectedBox.y)
+			}
+		}
+		if ebiten.IsKeyPressed(ebiten.KeyW) {
+			game.viewY -= game.viewSpeed
+		}
+		if ebiten.IsKeyPressed(ebiten.KeyS) {
+			game.viewY += game.viewSpeed
+		}
+		if ebiten.IsKeyPressed(ebiten.KeyA) {
+			game.viewX -= game.viewSpeed
+		}
+		if ebiten.IsKeyPressed(ebiten.KeyD) {
+			game.viewX += game.viewSpeed
+		}
+		if game.viewX > MAP_SIZE_X-WINDOW_WIDTH/2 {
+			game.viewX = MAP_SIZE_X - WINDOW_WIDTH/2
+		} else if game.viewX < WINDOW_WIDTH/2 {
+			game.viewX = WINDOW_WIDTH / 2
+		}
+		if game.viewY > MAP_SIZE_Y-WINDOW_HEIGHT/2 {
+			game.viewY = MAP_SIZE_Y - WINDOW_HEIGHT/2
+		} else if game.viewY < WINDOW_HEIGHT/2 {
+			game.viewY = WINDOW_HEIGHT / 2
+		}
 	}
 	return nil
 }
@@ -125,9 +127,7 @@ func main() {
 	}
 	stage1Image := makeEbiteImagesFromMap(*stage1)
 	displayWorld := ebiten.NewImage(MAP_SIZE_X, MAP_SIZE_Y)
-	root := widget.NewContainer()
 	game := mainGame{
-		ui:             &ebitenui.UI{Container: root},
 		gameCursor:     cursor{selectedBox: nil},
 		mapGrid:        createGrid(),
 		viewX:          WINDOW_WIDTH / 2,
@@ -141,6 +141,7 @@ func main() {
 		drawOps:        &ebiten.DrawImageOptions{},
 		font:           LoadFont("Square-Black.ttf", 30),
 	}
+	game.ui = &ebitenui.UI{Container: makeUI(&game)}
 	buildDrawableStage(&game)
 	err = ebiten.RunGame(&game)
 	if err != nil {
