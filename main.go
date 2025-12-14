@@ -12,6 +12,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/lafriks/go-tiled"
+	"github.com/solarlune/paths"
 	camera "github.com/tducasse/ebiten-camera"
 	"golang.org/x/image/font"
 )
@@ -25,11 +26,14 @@ const (
 	WINDOW_WIDTH  = 800
 	WINDOW_HEIGHT = 800
 
-	MAP_SIZE_X = 64 * 25
-	MAP_SIZE_Y = 64 * 25
+	MAP_SIZE_X = TILE_WIDTH * MAP_WIDTH
+	MAP_SIZE_Y = TILE_HEIGHT * MAP_HEIGHT
 
 	TILE_WIDTH  = 64
 	TILE_HEIGHT = 64
+
+	MAP_WIDTH  = 25
+	MAP_HEIGHT = 25
 )
 
 type gameState int
@@ -45,7 +49,7 @@ type mainGame struct {
 	state                   gameState
 	ui                      *ebitenui.UI
 	gameCursor              cursor
-	mapGrid                 grid
+	mapGrid                 *grid
 	viewX, viewY, viewSpeed int
 	cameraView              *camera.Camera
 	displayWorld            *ebiten.Image
@@ -54,6 +58,14 @@ type mainGame struct {
 	stage1TileHash          map[uint32]*ebiten.Image
 	drawOps                 *ebiten.DrawImageOptions
 	font                    font.Face
+	pathMap                 *paths.Grid
+}
+
+type enemy struct {
+	spritesheet            *ebiten.Image
+	x, y                   int
+	xDirection, yDirection int
+	path                   *paths.Path
 }
 
 type tower struct {
@@ -72,9 +84,6 @@ func (game *mainGame) Update() error {
 			cursorX, cursorY := ebiten.CursorPosition()
 			game.gameCursor.x, game.gameCursor.y = cursorX+game.viewX-WINDOW_WIDTH/2, cursorY+game.viewY-WINDOW_HEIGHT/2
 			game.mapGrid.getGridBoxAtCursor(&game.gameCursor)
-			if game.gameCursor.selectedBox != nil {
-				fmt.Println(game.gameCursor.selectedBox.x, game.gameCursor.selectedBox.y)
-			}
 		}
 		if ebiten.IsKeyPressed(ebiten.KeyW) {
 			game.viewY -= game.viewSpeed
@@ -119,6 +128,8 @@ func (game *mainGame) Layout(outsideWidth, outsideHeight int) (int, int) {
 }
 
 func main() {
+
+	pathMap := paths.NewGrid(25, 25, TILE_WIDTH, TILE_HEIGHT)
 	stage1, err := tiled.LoadFile(stage1Path)
 	ebiten.SetWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT)
 	if err != nil {
@@ -128,6 +139,7 @@ func main() {
 	stage1Image := makeEbiteImagesFromMap(*stage1)
 	displayWorld := ebiten.NewImage(MAP_SIZE_X, MAP_SIZE_Y)
 	game := mainGame{
+		pathMap:        pathMap,
 		gameCursor:     cursor{selectedBox: nil},
 		mapGrid:        createGrid(),
 		viewX:          WINDOW_WIDTH / 2,
@@ -143,6 +155,8 @@ func main() {
 	}
 	game.ui = &ebitenui.UI{Container: makeUI(&game)}
 	buildDrawableStage(&game)
+	buildPathMap(&game)
+	pathMaptoMapGrid(&game)
 	err = ebiten.RunGame(&game)
 	if err != nil {
 		fmt.Println("Couldn't run game:", err)
@@ -163,6 +177,28 @@ func buildDrawableStage(game *mainGame) {
 				ebitenTileToDraw := game.stage1TileHash[tileToDraw.ID]
 				screen.DrawImage(ebitenTileToDraw, &drawOptions)
 			}
+		}
+	}
+}
+
+func buildPathMap(game *mainGame) {
+	for tileY := 0; tileY < game.stage1Map.Height; tileY += 1 {
+		for tileX := 0; tileX < game.stage1Map.Width; tileX += 1 {
+			currentTile := game.stage1Map.Layers[0].Tiles[tileY*game.stage1Map.Width+tileX]
+			if currentTile.ID == 3 {
+				game.pathMap.Get(tileX, tileY).Walkable = false
+			}
+		}
+	}
+}
+
+func pathMaptoMapGrid(game *mainGame) {
+	gridIndex := 0
+	for x := 0; x < MAP_WIDTH; x += 1 {
+		for y := 0; y < MAP_HEIGHT; y += 1 {
+			currentGrid := game.mapGrid.gridBoxes[gridIndex]
+			currentGrid.cell = game.pathMap.Get(y, x) //Grid is built by columns first, so flip x and y
+			gridIndex += 1
 		}
 	}
 }

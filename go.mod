@@ -6,6 +6,7 @@ require (
 	github.com/ebitenui/ebitenui v0.7.2
 	github.com/hajimehoshi/ebiten/v2 v2.9.5
 	github.com/lafriks/go-tiled v0.14.0
+	github.com/solarlune/paths v0.0.0-20231114192052-27926568823f
 	github.com/solarlune/resolv v0.8.1
 	github.com/tducasse/ebiten-camera v0.0.0-20220322101136-d16bc861ea8e
 	golang.org/x/image v0.34.0
