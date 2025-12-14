@@ -103,6 +103,11 @@ func (game *mainGame) Update() error {
 		} else if game.viewY < WINDOW_HEIGHT/2 {
 			game.viewY = WINDOW_HEIGHT / 2
 		}
+		if len(game.enemySpawner.enemies) != 0 {
+			for _, currentEnemy := range game.enemySpawner.enemies {
+				currentEnemy.Update()
+			}
+		}
 	}
 	return nil
 }
@@ -119,6 +124,13 @@ func (game *mainGame) Draw(screen *ebiten.Image) {
 		game.drawOps.GeoM.Translate(float64(game.enemySpawner.x), float64(game.enemySpawner.y))
 		game.displayWorld.DrawImage(game.enemySpawner.sprite, game.drawOps)
 		game.drawOps.GeoM.Reset()
+		if len(game.enemySpawner.enemies) != 0 {
+			for _, currentEnemy := range game.enemySpawner.enemies {
+				game.drawOps.GeoM.Translate(float64(currentEnemy.x), float64(currentEnemy.y))
+				game.displayWorld.DrawImage(currentEnemy.spritesheet, game.drawOps)
+				game.drawOps.GeoM.Reset()
+			}
+		}
 		game.cameraView.Follow.H = game.viewY * 2
 		game.cameraView.Follow.W = game.viewX * 2
 		game.cameraView.Draw(game.displayWorld, screen)
@@ -156,6 +168,10 @@ func main() {
 		font:           LoadFont("Square-Black.ttf", 30),
 		enemySpawner:   newEnemySpawn(0, 0),
 		base:           newPlayerBase(24*TILE_WIDTH, 20*TILE_HEIGHT),
+	}
+	game.enemySpawner.enemies = append(game.enemySpawner.enemies, newEnemy(0, 0, 4))
+	for _, currentEnemy := range game.enemySpawner.enemies {
+		newEnemyPath(&game, currentEnemy)
 	}
 	game.ui = &ebitenui.UI{Container: makeUI(&game)}
 	buildDrawableStage(&game)
