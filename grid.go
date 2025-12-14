@@ -24,7 +24,7 @@ func createGrid() *grid {
 	mapGrid := &grid{
 		make([]*gridBox, 0),
 	}
-	for yIndex < MAP_SIZE_Y {
+	for xIndex < MAP_SIZE_X {
 		newGridBox := gridBox{
 			x:      xIndex,
 			y:      yIndex,
@@ -34,10 +34,10 @@ func createGrid() *grid {
 				TILE_WIDTH, TILE_HEIGHT),
 		}
 		mapGrid.gridBoxes = append(mapGrid.gridBoxes, &newGridBox)
-		xIndex += TILE_WIDTH
-		if xIndex >= MAP_SIZE_X {
-			xIndex = 0
-			yIndex += TILE_HEIGHT
+		yIndex += TILE_HEIGHT
+		if yIndex >= MAP_SIZE_Y {
+			yIndex = 0
+			xIndex += TILE_WIDTH
 		}
 	}
 	return mapGrid

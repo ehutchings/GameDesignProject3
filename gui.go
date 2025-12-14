@@ -94,7 +94,7 @@ func makeUI(game *mainGame) *widget.Container {
 		playerName := playerNameInput.GetText()
 		if baseTowerCost >= 0 {
 			game.state = gameStatePlay
-			game.name = playerName
+			game.base.name = playerName
 			game.baseCost = int(baseTowerCost)
 		}
 	}

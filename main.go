@@ -34,6 +34,8 @@ const (
 
 	MAP_WIDTH  = 25
 	MAP_HEIGHT = 25
+
+	BASE_HEALTH = 100
 )
 
 type gameState int
@@ -44,7 +46,6 @@ const (
 )
 
 type mainGame struct {
-	name                    string
 	baseCost                int
 	state                   gameState
 	ui                      *ebitenui.UI
@@ -59,13 +60,8 @@ type mainGame struct {
 	drawOps                 *ebiten.DrawImageOptions
 	font                    font.Face
 	pathMap                 *paths.Grid
-}
-
-type enemy struct {
-	spritesheet            *ebiten.Image
-	x, y                   int
-	xDirection, yDirection int
-	path                   *paths.Path
+	enemySpawner            *enemySpawn
+	base                    *playerBase
 }
 
 type tower struct {
@@ -117,6 +113,12 @@ func (game *mainGame) Draw(screen *ebiten.Image) {
 	} else {
 		game.displayWorld.DrawImage(game.drawableStage1, game.drawOps)
 		game.drawOps.GeoM.Reset()
+		game.drawOps.GeoM.Translate(float64(game.base.x), float64(game.base.y))
+		game.displayWorld.DrawImage(game.base.sprite, game.drawOps)
+		game.drawOps.GeoM.Reset()
+		game.drawOps.GeoM.Translate(float64(game.enemySpawner.x), float64(game.enemySpawner.y))
+		game.displayWorld.DrawImage(game.enemySpawner.sprite, game.drawOps)
+		game.drawOps.GeoM.Reset()
 		game.cameraView.Follow.H = game.viewY * 2
 		game.cameraView.Follow.W = game.viewX * 2
 		game.cameraView.Draw(game.displayWorld, screen)
@@ -152,6 +154,8 @@ func main() {
 		stage1TileHash: stage1Image,
 		drawOps:        &ebiten.DrawImageOptions{},
 		font:           LoadFont("Square-Black.ttf", 30),
+		enemySpawner:   newEnemySpawn(0, 0),
+		base:           newPlayerBase(24*TILE_WIDTH, 20*TILE_HEIGHT),
 	}
 	game.ui = &ebitenui.UI{Container: makeUI(&game)}
 	buildDrawableStage(&game)
@@ -197,7 +201,7 @@ func pathMaptoMapGrid(game *mainGame) {
 	for x := 0; x < MAP_WIDTH; x += 1 {
 		for y := 0; y < MAP_HEIGHT; y += 1 {
 			currentGrid := game.mapGrid.gridBoxes[gridIndex]
-			currentGrid.cell = game.pathMap.Get(y, x) //Grid is built by columns first, so flip x and y
+			currentGrid.cell = game.pathMap.Get(x, y)
 			gridIndex += 1
 		}
 	}
