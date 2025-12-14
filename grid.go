@@ -28,6 +28,7 @@ func createGrid() *grid {
 		newGridBox := gridBox{
 			x:      xIndex,
 			y:      yIndex,
+			tower:  nil,
 			width:  TILE_WIDTH,
 			height: TILE_HEIGHT,
 			collider: resolv.NewRectangle(float64(xIndex+TILE_WIDTH/2), float64(yIndex+TILE_HEIGHT/2),

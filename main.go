@@ -51,6 +51,7 @@ type mainGame struct {
 	ui                      *ebitenui.UI
 	gameCursor              cursor
 	mapGrid                 *grid
+	boxesWithTowers         []*gridBox
 	viewX, viewY, viewSpeed int
 	cameraView              *camera.Camera
 	displayWorld            *ebiten.Image
@@ -64,14 +65,6 @@ type mainGame struct {
 	base                    *playerBase
 }
 
-type tower struct {
-	spritesheet *ebiten.Image
-	x, y        int
-	baseDamage  int
-	rangeRadius int
-	baseCostMod float64
-}
-
 func (game *mainGame) Update() error {
 	if game.state == gameStateStart {
 		game.ui.Update()
@@ -80,6 +73,13 @@ func (game *mainGame) Update() error {
 			cursorX, cursorY := ebiten.CursorPosition()
 			game.gameCursor.x, game.gameCursor.y = cursorX+game.viewX-WINDOW_WIDTH/2, cursorY+game.viewY-WINDOW_HEIGHT/2
 			game.mapGrid.getGridBoxAtCursor(&game.gameCursor)
+			selectedGrid := game.gameCursor.selectedBox
+			if selectedGrid != nil && selectedGrid.tower == nil {
+				selectedGrid.tower = newCrossbowTower(selectedGrid.x, selectedGrid.y)
+				selectedGrid.cell.Walkable = false
+				game.boxesWithTowers = append(game.boxesWithTowers, selectedGrid)
+				redrawEnemyPaths(game, game.enemySpawner.enemies)
+			}
 		}
 		if ebiten.IsKeyPressed(ebiten.KeyW) {
 			game.viewY -= game.viewSpeed
@@ -124,6 +124,9 @@ func (game *mainGame) Draw(screen *ebiten.Image) {
 		game.drawOps.GeoM.Translate(float64(game.enemySpawner.x), float64(game.enemySpawner.y))
 		game.displayWorld.DrawImage(game.enemySpawner.sprite, game.drawOps)
 		game.drawOps.GeoM.Reset()
+		for _, box := range game.boxesWithTowers {
+			box.tower.Draw(game.drawOps, game.displayWorld)
+		}
 		if len(game.enemySpawner.enemies) != 0 {
 			for _, currentEnemy := range game.enemySpawner.enemies {
 				game.drawOps.GeoM.Translate(float64(currentEnemy.x), float64(currentEnemy.y))
@@ -153,23 +156,24 @@ func main() {
 	stage1Image := makeEbiteImagesFromMap(*stage1)
 	displayWorld := ebiten.NewImage(MAP_SIZE_X, MAP_SIZE_Y)
 	game := mainGame{
-		pathMap:        pathMap,
-		gameCursor:     cursor{selectedBox: nil},
-		mapGrid:        createGrid(),
-		viewX:          WINDOW_WIDTH / 2,
-		viewY:          WINDOW_HEIGHT / 2,
-		viewSpeed:      5,
-		cameraView:     camera.Init(WINDOW_WIDTH, WINDOW_HEIGHT),
-		displayWorld:   displayWorld,
-		stage1Map:      stage1,
-		drawableStage1: ebiten.NewImage(stage1.Width*stage1.TileWidth, stage1.Height*stage1.TileHeight),
-		stage1TileHash: stage1Image,
-		drawOps:        &ebiten.DrawImageOptions{},
-		font:           LoadFont("Square-Black.ttf", 30),
-		enemySpawner:   newEnemySpawn(0, 0),
-		base:           newPlayerBase(24*TILE_WIDTH, 20*TILE_HEIGHT),
+		pathMap:         pathMap,
+		gameCursor:      cursor{selectedBox: nil},
+		mapGrid:         createGrid(),
+		boxesWithTowers: []*gridBox{},
+		viewX:           WINDOW_WIDTH / 2,
+		viewY:           WINDOW_HEIGHT / 2,
+		viewSpeed:       5,
+		cameraView:      camera.Init(WINDOW_WIDTH, WINDOW_HEIGHT),
+		displayWorld:    displayWorld,
+		stage1Map:       stage1,
+		drawableStage1:  ebiten.NewImage(stage1.Width*stage1.TileWidth, stage1.Height*stage1.TileHeight),
+		stage1TileHash:  stage1Image,
+		drawOps:         &ebiten.DrawImageOptions{},
+		font:            LoadFont("Square-Black.ttf", 30),
+		enemySpawner:    newEnemySpawn(0, 0),
+		base:            newPlayerBase(24*TILE_WIDTH, 20*TILE_HEIGHT),
 	}
-	game.enemySpawner.enemies = append(game.enemySpawner.enemies, newEnemy(0, 0, 4))
+	game.enemySpawner.enemies = append(game.enemySpawner.enemies, newEnemy(0, 0, 2))
 	for _, currentEnemy := range game.enemySpawner.enemies {
 		newEnemyPath(&game, currentEnemy)
 	}

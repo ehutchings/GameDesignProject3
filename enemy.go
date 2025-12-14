@@ -77,3 +77,12 @@ func (enemy *enemy) Update() {
 		enemy.collider.SetY(float64(enemy.y - TILE_HEIGHT/2))
 	}
 }
+
+func redrawEnemyPaths(game *mainGame, enemies []*enemy) {
+	for _, currentEnemy := range enemies {
+		startingCell := game.pathMap.Get(currentEnemy.x/TILE_WIDTH, currentEnemy.y/TILE_HEIGHT)
+		endingCell := game.pathMap.Get(game.base.x/TILE_WIDTH, game.base.y/TILE_HEIGHT)
+		currentEnemy.path = game.pathMap.GetPathFromCells(startingCell, endingCell,
+			false, false)
+	}
+}
