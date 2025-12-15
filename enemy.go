@@ -52,8 +52,18 @@ func newEnemyPath(game *mainGame, enemy *enemy) {
 	enemy.path = game.pathMap.GetPathFromCells(startingCell, endingCell, false, false)
 }
 
+func canEnemyPath(game *mainGame) bool {
+	startingCell := game.pathMap.Get(game.enemySpawner.x/TILE_WIDTH, game.enemySpawner.y/TILE_HEIGHT)
+	endingCell := game.pathMap.Get(game.base.x/TILE_WIDTH, game.base.y/TILE_HEIGHT)
+	path := game.pathMap.GetPathFromCells(startingCell, endingCell, false, false)
+	if path.Length() == 0 {
+		return false
+	}
+	return true
+}
+
 func (enemy *enemy) Update() {
-	if enemy.path != nil {
+	if enemy.path != nil && enemy.path.Length() > 0 {
 		currentCell := enemy.path.Current()
 		if math.Abs(float64(currentCell.X*TILE_WIDTH)-float64(enemy.x)) <= 2 &&
 			math.Abs(float64(currentCell.Y*TILE_HEIGHT)-float64(enemy.y)) <= 2 {

@@ -75,10 +75,14 @@ func (game *mainGame) Update() error {
 			game.mapGrid.getGridBoxAtCursor(&game.gameCursor)
 			selectedGrid := game.gameCursor.selectedBox
 			if selectedGrid != nil && selectedGrid.tower == nil {
-				selectedGrid.tower = newCrossbowTower(selectedGrid.x, selectedGrid.y)
 				selectedGrid.cell.Walkable = false
-				game.boxesWithTowers = append(game.boxesWithTowers, selectedGrid)
-				redrawEnemyPaths(game, game.enemySpawner.enemies)
+				if canEnemyPath(game) {
+					selectedGrid.tower = newCrossbowTower(selectedGrid.x, selectedGrid.y)
+					game.boxesWithTowers = append(game.boxesWithTowers, selectedGrid)
+					redrawEnemyPaths(game, game.enemySpawner.enemies)
+				} else {
+					selectedGrid.cell.Walkable = true
+				}
 			}
 		}
 		if ebiten.IsKeyPressed(ebiten.KeyW) {
