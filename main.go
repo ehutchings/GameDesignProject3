@@ -70,50 +70,26 @@ func (game *mainGame) Update() error {
 		game.ui.Update()
 	} else if game.state == gameStatePlay {
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-			cursorX, cursorY := ebiten.CursorPosition()
-			game.gameCursor.x, game.gameCursor.y = cursorX+game.viewX-WINDOW_WIDTH/2, cursorY+game.viewY-WINDOW_HEIGHT/2
-			game.mapGrid.getGridBoxAtCursor(&game.gameCursor)
-			selectedGrid := game.gameCursor.selectedBox
-			if selectedGrid != nil && selectedGrid.tower == nil {
-				selectedGrid.cell.Walkable = false
-				if canEnemyPath(game) {
-					selectedGrid.tower = newCrossbowTower(selectedGrid.x, selectedGrid.y)
-					game.boxesWithTowers = append(game.boxesWithTowers, selectedGrid)
-					redrawEnemyPaths(game, game.enemySpawner.enemies)
-				} else {
-					selectedGrid.cell.Walkable = true
-				}
-			}
+			buildTowerOnClick(game)
 		}
-		if ebiten.IsKeyPressed(ebiten.KeyW) {
-			game.viewY -= game.viewSpeed
-		}
-		if ebiten.IsKeyPressed(ebiten.KeyS) {
-			game.viewY += game.viewSpeed
-		}
-		if ebiten.IsKeyPressed(ebiten.KeyA) {
-			game.viewX -= game.viewSpeed
-		}
-		if ebiten.IsKeyPressed(ebiten.KeyD) {
-			game.viewX += game.viewSpeed
-		}
-		if game.viewX > MAP_SIZE_X-WINDOW_WIDTH/2 {
-			game.viewX = MAP_SIZE_X - WINDOW_WIDTH/2
-		} else if game.viewX < WINDOW_WIDTH/2 {
-			game.viewX = WINDOW_WIDTH / 2
-		}
-		if game.viewY > MAP_SIZE_Y-WINDOW_HEIGHT/2 {
-			game.viewY = MAP_SIZE_Y - WINDOW_HEIGHT/2
-		} else if game.viewY < WINDOW_HEIGHT/2 {
-			game.viewY = WINDOW_HEIGHT / 2
-		}
-		if len(game.enemySpawner.enemies) != 0 {
-			for _, currentEnemy := range game.enemySpawner.enemies {
-				currentEnemy.Update()
-			}
-		}
+		moveCamera(game)
+		lockCameraInBounds(game)
+		updateEnemies(game)
 	}
 	return nil
+}
+
+func lockCameraInBounds(game *mainGame) {
+	if game.viewX > MAP_SIZE_X-WINDOW_WIDTH/2 {
+		game.viewX = MAP_SIZE_X - WINDOW_WIDTH/2
+	} else if game.viewX < WINDOW_WIDTH/2 {
+		game.viewX = WINDOW_WIDTH / 2
+	}
+	if game.viewY > MAP_SIZE_Y-WINDOW_HEIGHT/2 {
+		game.viewY = MAP_SIZE_Y - WINDOW_HEIGHT/2
+	} else if game.viewY < WINDOW_HEIGHT/2 {
+		game.viewY = WINDOW_HEIGHT / 2
+	}
 }
 
 func (game *mainGame) Draw(screen *ebiten.Image) {
@@ -188,6 +164,21 @@ func main() {
 	err = ebiten.RunGame(&game)
 	if err != nil {
 		fmt.Println("Couldn't run game:", err)
+	}
+}
+
+func moveCamera(game *mainGame) {
+	if ebiten.IsKeyPressed(ebiten.KeyW) {
+		game.viewY -= game.viewSpeed
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyS) {
+		game.viewY += game.viewSpeed
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyA) {
+		game.viewX -= game.viewSpeed
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyD) {
+		game.viewX += game.viewSpeed
 	}
 }
 

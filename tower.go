@@ -4,6 +4,7 @@ import (
 	"image"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/solarlune/resolv"
 )
 
 type tower struct {
@@ -14,6 +15,7 @@ type tower struct {
 	baseCostMod               float64
 	firing                    bool
 	frameLength, currentFrame int
+	rangeCollider             *resolv.Circle
 }
 
 func (tower *tower) Draw(drawOps *ebiten.DrawImageOptions, screen *ebiten.Image) {
@@ -26,15 +28,17 @@ func (tower *tower) Draw(drawOps *ebiten.DrawImageOptions, screen *ebiten.Image)
 
 func newCrossbowTower(x, y int) *tower {
 	sheet := LoadEmbeddedImage("Towers", "crossbowSpriteSheet.png")
+	radius := 250
 	return &tower{
-		spritesheet:  sheet,
-		x:            x,
-		y:            y,
-		baseDamage:   1,
-		baseCostMod:  1,
-		rangeRadius:  250,
-		firing:       false,
-		currentFrame: 0,
-		frameLength:  3,
+		spritesheet:   sheet,
+		x:             x,
+		y:             y,
+		baseDamage:    1,
+		baseCostMod:   1,
+		rangeRadius:   radius,
+		firing:        false,
+		currentFrame:  0,
+		frameLength:   3,
+		rangeCollider: resolv.NewCircle(float64(x-TILE_WIDTH/2), float64(y-TILE_HEIGHT/2), float64(radius)),
 	}
 }

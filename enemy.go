@@ -88,6 +88,14 @@ func (enemy *enemy) Update() {
 	}
 }
 
+func updateEnemies(game *mainGame) {
+	if len(game.enemySpawner.enemies) != 0 {
+		for _, currentEnemy := range game.enemySpawner.enemies {
+			currentEnemy.Update()
+		}
+	}
+}
+
 func redrawEnemyPaths(game *mainGame, enemies []*enemy) {
 	for _, currentEnemy := range enemies {
 		startingCell := game.pathMap.Get(currentEnemy.x/TILE_WIDTH, currentEnemy.y/TILE_HEIGHT)
