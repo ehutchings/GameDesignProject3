@@ -6,13 +6,11 @@ package main
 import (
 	"embed"
 	"fmt"
-	"os"
 
 	"github.com/ebitenui/ebitenui"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
-	"github.com/lafriks/go-tiled"
 	"github.com/solarlune/paths"
 	camera "github.com/tducasse/ebiten-camera"
 	"golang.org/x/image/colornames"
@@ -24,6 +22,7 @@ var EmbeddedAssets embed.FS
 
 const (
 	stage1Path = "stage1.tmx"
+	stage2Path = "stage2.tmx"
 
 	WINDOW_WIDTH  = 800
 	WINDOW_HEIGHT = 800
@@ -68,7 +67,7 @@ type mainGame struct {
 	enemySpawner            *enemySpawn
 	base                    *playerBase
 	bank                    goldCounter
-	stages                  []*stage
+	stageManager            stageManager
 	pathMap                 *paths.Grid
 }
 
@@ -85,6 +84,9 @@ func (game *mainGame) Update() error {
 		game.projManager.UpdateProjectiles()
 		for _, tower := range game.towers {
 			tower.Update(game.enemySpawner.activeEnemies, game.projManager)
+		}
+		if len(game.enemySpawner.activeEnemies) == 0 && game.stageManager.index < len(game.stageManager.stages) {
+			game.stageManager.rebuildGameForStage(game)
 		}
 	}
 	return nil
@@ -107,7 +109,7 @@ func (game *mainGame) Draw(screen *ebiten.Image) {
 	if game.state == gameStateStart {
 		game.ui.Draw(screen)
 	} else {
-		game.displayWorld.DrawImage(game.stages[0].drawableStage, game.drawOps)
+		game.displayWorld.DrawImage(game.stageManager.currentStage.drawableStage, game.drawOps)
 		game.drawOps.GeoM.Reset()
 		game.drawOps.GeoM.Translate(float64(game.base.x), float64(game.base.y))
 		game.displayWorld.DrawImage(game.base.sprite, game.drawOps)
@@ -134,18 +136,7 @@ func (game *mainGame) Layout(outsideWidth, outsideHeight int) (int, int) {
 func main() {
 
 	pathMap := paths.NewGrid(25, 25, TILE_WIDTH, TILE_HEIGHT)
-	stage1Map, err := tiled.LoadFile(stage1Path)
 	ebiten.SetWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT)
-	if err != nil {
-		fmt.Printf("error parsing map: %s", err.Error())
-		os.Exit(2)
-	}
-	stage1Image := makeEbiteImagesFromMap(*stage1Map)
-	stage1 := stage{
-		stageMap:      stage1Map,
-		drawableStage: nil,
-		stageTileHash: stage1Image,
-	}
 	displayWorld := ebiten.NewImage(MAP_SIZE_X, MAP_SIZE_Y)
 	game := mainGame{
 
@@ -159,27 +150,28 @@ func main() {
 		viewSpeed:    5,
 		cameraView:   camera.Init(WINDOW_WIDTH, WINDOW_HEIGHT),
 		displayWorld: displayWorld,
-		stages: []*stage{
-			&stage1,
+		stageManager: stageManager{
+			stages:        getStages(),
+			goToNextStage: true,
+			index:         0,
 		},
-		drawOps:      &ebiten.DrawImageOptions{},
-		textOps:      &text.DrawOptions{},
-		font:         LoadFont("Square-Black.ttf", 30),
-		enemySpawner: newEnemySpawn(0, 0),
-		base:         newPlayerBase(24*TILE_WIDTH, 20*TILE_HEIGHT),
+		drawOps: &ebiten.DrawImageOptions{},
+		textOps: &text.DrawOptions{},
+		font:    LoadFont("Square-Black.ttf", 30),
 		bank: goldCounter{
-			gold: STARTING_GOLD, x: WINDOW_WIDTH / 2, y: 10, color: colornames.Gold,
+			gold: 0, x: WINDOW_WIDTH / 2, y: 10, color: colornames.Gold,
 		},
 	}
-	game.stages[0].buildDrawableStage()
-	game.stages[0].buildPathMap(game.pathMap)
-	pathMaptoMapGrid(&game)
+	game.stageManager.buildDrawableStages()
+	if game.stageManager.goToNextStage {
+		game.stageManager.rebuildGameForStage(&game)
+	}
 	game.enemySpawner.activeEnemies = append(game.enemySpawner.activeEnemies, newEnemy(0, 0, 2))
 	for _, currentEnemy := range game.enemySpawner.activeEnemies {
 		newEnemyPath(&game, currentEnemy)
 	}
 	game.ui = &ebitenui.UI{Container: makeUI(&game)}
-	err = ebiten.RunGame(&game)
+	err := ebiten.RunGame(&game)
 	if err != nil {
 		fmt.Println("Couldn't run game:", err)
 	}
@@ -206,6 +198,9 @@ func pathMaptoMapGrid(game *mainGame) {
 		for y := 0; y < MAP_HEIGHT; y += 1 {
 			currentGrid := game.mapGrid.gridBoxes[gridIndex]
 			currentGrid.cell = game.pathMap.Get(x, y)
+			if currentGrid.cell.Walkable == false {
+				game.mapGrid.gridBoxes[gridIndex].canBuild = false
+			}
 			gridIndex += 1
 		}
 	}
