@@ -57,12 +57,12 @@ func (projectileManager *projectileManager) UpdateProjectiles() {
 	for index, currentProjectile := range projectileManager.projectiles {
 		currentProjectile.Update()
 		if currentProjectile.x == currentProjectile.targetX && currentProjectile.y == currentProjectile.targetY {
-			projectileManager.removeEnemyAtIndex(index)
+			projectileManager.removeProjectileAtIndex(index)
 		}
 	}
 }
 
-func (projectileManager *projectileManager) removeEnemyAtIndex(index int) {
+func (projectileManager *projectileManager) removeProjectileAtIndex(index int) {
 	if len(projectileManager.projectiles) >= 2 {
 		projectileManager.projectiles = append(projectileManager.projectiles[:index],
 			projectileManager.projectiles[index+1:]...)
