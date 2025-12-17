@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -24,6 +23,7 @@ type tower struct {
 	rangeRadius               float64
 	baseCostMod               float64
 	firing                    bool
+	firingDelay, cooldown     int
 	frameLength, currentFrame int
 	rangeCollider             *resolv.Circle
 	targetEnemy               *enemy
@@ -33,11 +33,20 @@ func (tower *tower) Update(enemies []*enemy, projectileManager *projectileManage
 	tower.getTarget(enemies)
 	if tower.targetEnemy != nil {
 		tower.firing = true
-		tower.fireProjectile(projectileManager, tower.targetEnemy.x, tower.targetEnemy.y)
+		tower.cooldown -= 1
+		if tower.cooldown%(tower.firingDelay/tower.frameLength) == 0 {
+			tower.currentFrame += 1
+		}
+		if tower.cooldown <= 0 {
+			tower.fireProjectile(projectileManager, tower.targetEnemy.x, tower.targetEnemy.y)
+			tower.cooldown = tower.firingDelay
+			tower.currentFrame = 0
+		}
 	} else {
 		tower.firing = false
+		tower.currentFrame = 0
+		tower.cooldown = tower.firingDelay
 	}
-	//TODO
 }
 
 func (tower *tower) Draw(drawOps *ebiten.DrawImageOptions, screen *ebiten.Image) {
@@ -55,7 +64,6 @@ func (tower *tower) getTarget(enemies []*enemy) {
 		if tower.rangeCollider.DistanceTo(currentEnemy.collider) < tower.rangeRadius {
 			if currentEnemy.distanceTravelled > highestDistanceTravelled {
 				tower.targetEnemy = currentEnemy
-				fmt.Println("Found enemy")
 			}
 		}
 	}
@@ -73,6 +81,8 @@ func newCrossbowTower(x, y int) *tower {
 		baseCostMod:   1,
 		rangeRadius:   radius,
 		firing:        false,
+		firingDelay:   60,
+		cooldown:      0,
 		currentFrame:  0,
 		frameLength:   3,
 		rangeCollider: resolv.NewCircle(float64(x-TILE_WIDTH/2), float64(y-TILE_HEIGHT/2), float64(radius)),
