@@ -62,16 +62,14 @@ type mainGame struct {
 	viewX, viewY, viewSpeed int
 	cameraView              *camera.Camera
 	displayWorld            *ebiten.Image
-	stage1Map               *tiled.Map
-	drawableStage1          *ebiten.Image
-	stage1TileHash          map[uint32]*ebiten.Image
 	drawOps                 *ebiten.DrawImageOptions
 	textOps                 *text.DrawOptions
 	font                    font.Face
-	pathMap                 *paths.Grid
 	enemySpawner            *enemySpawn
 	base                    *playerBase
 	bank                    goldCounter
+	stages                  []*stage
+	pathMap                 *paths.Grid
 }
 
 func (game *mainGame) Update() error {
@@ -109,7 +107,7 @@ func (game *mainGame) Draw(screen *ebiten.Image) {
 	if game.state == gameStateStart {
 		game.ui.Draw(screen)
 	} else {
-		game.displayWorld.DrawImage(game.drawableStage1, game.drawOps)
+		game.displayWorld.DrawImage(game.stages[0].drawableStage, game.drawOps)
 		game.drawOps.GeoM.Reset()
 		game.drawOps.GeoM.Translate(float64(game.base.x), float64(game.base.y))
 		game.displayWorld.DrawImage(game.base.sprite, game.drawOps)
@@ -136,39 +134,45 @@ func (game *mainGame) Layout(outsideWidth, outsideHeight int) (int, int) {
 func main() {
 
 	pathMap := paths.NewGrid(25, 25, TILE_WIDTH, TILE_HEIGHT)
-	stage1, err := tiled.LoadFile(stage1Path)
+	stage1Map, err := tiled.LoadFile(stage1Path)
 	ebiten.SetWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT)
 	if err != nil {
 		fmt.Printf("error parsing map: %s", err.Error())
 		os.Exit(2)
 	}
-	stage1Image := makeEbiteImagesFromMap(*stage1)
+	stage1Image := makeEbiteImagesFromMap(*stage1Map)
+	stage1 := stage{
+		stageMap:      stage1Map,
+		drawableStage: nil,
+		stageTileHash: stage1Image,
+	}
 	displayWorld := ebiten.NewImage(MAP_SIZE_X, MAP_SIZE_Y)
 	game := mainGame{
-		pathMap:        pathMap,
-		gameCursor:     cursor{selectedBox: nil},
-		mapGrid:        createGrid(),
-		towers:         []*tower{},
-		projManager:    &projectileManager{make([]*projectile, 0)},
-		viewX:          WINDOW_WIDTH / 2,
-		viewY:          WINDOW_HEIGHT / 2,
-		viewSpeed:      5,
-		cameraView:     camera.Init(WINDOW_WIDTH, WINDOW_HEIGHT),
-		displayWorld:   displayWorld,
-		stage1Map:      stage1,
-		drawableStage1: ebiten.NewImage(stage1.Width*stage1.TileWidth, stage1.Height*stage1.TileHeight),
-		stage1TileHash: stage1Image,
-		drawOps:        &ebiten.DrawImageOptions{},
-		textOps:        &text.DrawOptions{},
-		font:           LoadFont("Square-Black.ttf", 30),
-		enemySpawner:   newEnemySpawn(0, 0),
-		base:           newPlayerBase(24*TILE_WIDTH, 20*TILE_HEIGHT),
+
+		gameCursor:   cursor{selectedBox: nil},
+		mapGrid:      createGrid(),
+		pathMap:      pathMap,
+		towers:       []*tower{},
+		projManager:  &projectileManager{make([]*projectile, 0)},
+		viewX:        WINDOW_WIDTH / 2,
+		viewY:        WINDOW_HEIGHT / 2,
+		viewSpeed:    5,
+		cameraView:   camera.Init(WINDOW_WIDTH, WINDOW_HEIGHT),
+		displayWorld: displayWorld,
+		stages: []*stage{
+			&stage1,
+		},
+		drawOps:      &ebiten.DrawImageOptions{},
+		textOps:      &text.DrawOptions{},
+		font:         LoadFont("Square-Black.ttf", 30),
+		enemySpawner: newEnemySpawn(0, 0),
+		base:         newPlayerBase(24*TILE_WIDTH, 20*TILE_HEIGHT),
 		bank: goldCounter{
 			gold: STARTING_GOLD, x: WINDOW_WIDTH / 2, y: 10, color: colornames.Gold,
 		},
 	}
-	buildDrawableStage(&game)
-	buildPathMap(&game)
+	game.stages[0].buildDrawableStage()
+	game.stages[0].buildPathMap(game.pathMap)
 	pathMaptoMapGrid(&game)
 	game.enemySpawner.activeEnemies = append(game.enemySpawner.activeEnemies, newEnemy(0, 0, 2))
 	for _, currentEnemy := range game.enemySpawner.activeEnemies {
@@ -193,35 +197,6 @@ func moveCamera(game *mainGame) {
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyD) {
 		game.viewX += game.viewSpeed
-	}
-}
-
-func buildDrawableStage(game *mainGame) {
-	screen := game.drawableStage1
-	drawOptions := ebiten.DrawImageOptions{}
-	for tileY := 0; tileY < game.stage1Map.Height; tileY += 1 {
-		for tileX := 0; tileX < game.stage1Map.Width; tileX += 1 {
-			drawOptions.GeoM.Reset()
-			TileXpos := float64(game.stage1Map.TileWidth * tileX)
-			TileYpos := float64(game.stage1Map.TileHeight * tileY)
-			drawOptions.GeoM.Translate(TileXpos, TileYpos)
-			tileToDraw := game.stage1Map.Layers[0].Tiles[tileY*game.stage1Map.Width+tileX]
-			if tileToDraw.ID != 0 {
-				ebitenTileToDraw := game.stage1TileHash[tileToDraw.ID]
-				screen.DrawImage(ebitenTileToDraw, &drawOptions)
-			}
-		}
-	}
-}
-
-func buildPathMap(game *mainGame) {
-	for tileY := 0; tileY < game.stage1Map.Height; tileY += 1 {
-		for tileX := 0; tileX < game.stage1Map.Width; tileX += 1 {
-			currentTile := game.stage1Map.Layers[0].Tiles[tileY*game.stage1Map.Width+tileX]
-			if currentTile.ID == 3 {
-				game.pathMap.Get(tileX, tileY).Walkable = false
-			}
-		}
 	}
 }
 
