@@ -28,6 +28,17 @@ type tower struct {
 	targetEnemy               *enemy
 }
 
+func (tower *tower) Update(enemies []*enemy, projectileManager *projectileManager) {
+	tower.getTarget(enemies)
+	if tower.targetEnemy != nil {
+		tower.firing = true
+		tower.fireProjectile(projectileManager, tower.targetEnemy.x, tower.targetEnemy.y)
+	} else {
+		tower.firing = false
+	}
+	//TODO
+}
+
 func (tower *tower) Draw(drawOps *ebiten.DrawImageOptions, screen *ebiten.Image) {
 	drawOps.GeoM.Translate(float64(tower.x), float64(tower.y))
 	frame := tower.currentFrame * TILE_WIDTH
@@ -67,12 +78,14 @@ func newCrossbowTower(x, y int) *tower {
 	}
 }
 
-func (tower *tower) fireProjectile(projManager *projectileManager) {
+func (tower *tower) fireProjectile(projManager *projectileManager, targetX, targetY int) {
 	if tower.typeOfTower == crossbow {
 		sprite := LoadEmbeddedImage("Projectiles", "crossbowBolt.png")
 		newProjectile := projectile{
 			x:               tower.x,
 			y:               tower.y,
+			targetX:         targetX,
+			targetY:         targetY,
 			sprite:          sprite,
 			xDirection:      1,
 			yDirection:      1,
