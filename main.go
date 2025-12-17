@@ -75,13 +75,14 @@ func (game *mainGame) Update() error {
 	if game.state == gameStateStart {
 		game.ui.Update()
 	} else if game.state == gameStatePlay {
+		game.gameCursor.selectTowerType()
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 			buildTowerOnClick(game)
 		}
 		moveCamera(game)
 		lockCameraInBounds(game)
 		game.enemySpawner.updateEnemies(game.stageManager.currentStage.stageWaves, &game.bank, game.pathMap, &game.base)
-		game.projManager.UpdateProjectiles()
+		game.projManager.UpdateProjectiles(game.enemySpawner.activeEnemies)
 		for _, tower := range game.towers {
 			tower.Update(game.enemySpawner.activeEnemies, &game.projManager)
 		}

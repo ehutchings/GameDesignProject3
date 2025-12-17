@@ -11,8 +11,15 @@ type towerType int
 
 const (
 	crossbow = towerType(iota)
-	blackHole
+	voidLauncher
 	infernalEye
+)
+
+type damageType int
+
+const (
+	firedProjectile = damageType(iota)
+	AreaOfEffect
 )
 
 type tower struct {
@@ -88,6 +95,46 @@ func newCrossbowTower(x, y int) tower {
 	}
 }
 
+func newVoidLauncherTower(x, y int) tower {
+	sheet := LoadEmbeddedImage("Towers", "voidLauncherSpriteSheet.png")
+	radius := 200.0
+	return tower{
+		typeOfTower:   voidLauncher,
+		spritesheet:   sheet,
+		x:             x,
+		y:             y,
+		baseDamage:    2,
+		baseCostMod:   2,
+		rangeRadius:   radius,
+		firing:        false,
+		firingDelay:   120,
+		cooldown:      0,
+		currentFrame:  0,
+		frameLength:   4,
+		rangeCollider: resolv.NewCircle(float64(x-TILE_WIDTH/2), float64(y-TILE_HEIGHT/2), float64(radius)),
+	}
+}
+
+func newInfernalEyeTower(x, y int) tower {
+	sheet := LoadEmbeddedImage("Towers", "infernalEyeSpriteSheet.png")
+	radius := 350.0
+	return tower{
+		typeOfTower:   infernalEye,
+		spritesheet:   sheet,
+		x:             x,
+		y:             y,
+		baseDamage:    1,
+		baseCostMod:   1.5,
+		rangeRadius:   radius,
+		firing:        false,
+		firingDelay:   10,
+		cooldown:      0,
+		currentFrame:  0,
+		frameLength:   4,
+		rangeCollider: resolv.NewCircle(float64(x-TILE_WIDTH/2), float64(y-TILE_HEIGHT/2), float64(radius)),
+	}
+}
+
 func (tower *tower) fireProjectile(projManager *projectileManager, targetX, targetY int) {
 	if tower.typeOfTower == crossbow {
 		sprite := LoadEmbeddedImage("Projectiles", "crossbowBolt.png")
@@ -102,7 +149,49 @@ func (tower *tower) fireProjectile(projManager *projectileManager, targetX, targ
 			yDirection:      1,
 			inheritedDamage: tower.baseDamage,
 			speed:           14,
-			effect:          damageOnly,
+			isHitscan:       false,
+			effect:          nil,
+		}
+		projManager.projectiles = append(projManager.projectiles, newProjectile)
+	}
+	if tower.typeOfTower == voidLauncher {
+		sprite := LoadEmbeddedImage("Projectiles", "voidSphere.png")
+		newProjectile := projectile{
+			x:               tower.x,
+			y:               tower.y,
+			targetEnemy:     tower.targetEnemy,
+			targetX:         targetX,
+			targetY:         targetY,
+			sprite:          sprite,
+			xDirection:      1,
+			yDirection:      1,
+			inheritedDamage: tower.baseDamage,
+			speed:           8,
+			isHitscan:       false,
+			effect: &effect{
+				typeOfEffect: stun,
+				duration:     60,
+				strength:     0,
+			},
+			AreaOfEffectRadius: 60,
+		}
+		projManager.projectiles = append(projManager.projectiles, newProjectile)
+	}
+	if tower.typeOfTower == infernalEye {
+		sprite := LoadEmbeddedImage("Projectiles", "infernalBeam.png")
+		newProjectile := projectile{
+			x:               tower.x,
+			y:               tower.y,
+			targetEnemy:     tower.targetEnemy,
+			targetX:         targetX,
+			targetY:         targetY,
+			sprite:          sprite,
+			xDirection:      1,
+			yDirection:      1,
+			inheritedDamage: tower.baseDamage,
+			speed:           0,
+			isHitscan:       true,
+			effect:          nil,
 		}
 		projManager.projectiles = append(projManager.projectiles, newProjectile)
 	}

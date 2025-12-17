@@ -5,8 +5,9 @@ import (
 )
 
 type cursor struct {
-	selectedBox *gridBox
-	x, y        int
+	selectedBox   *gridBox
+	selectedTower towerType
+	x, y          int
 }
 
 func buildTowerOnClick(game *mainGame) {
@@ -16,15 +17,41 @@ func buildTowerOnClick(game *mainGame) {
 	selectedGrid := game.gameCursor.selectedBox
 	if selectedGrid != nil && selectedGrid.canBuild == true {
 		selectedGrid.cell.Walkable = false
-		if canEnemyPath(game) && game.bank.gold >= CROSSBOW_TOWER_COST {
-			newTower := newCrossbowTower(selectedGrid.x, selectedGrid.y)
-			selectedGrid.tower = &newTower
-			selectedGrid.canBuild = false
-			game.towers = append(game.towers, selectedGrid.tower)
-			game.bank.gold -= CROSSBOW_TOWER_COST
-			redrawEnemyPaths(game, game.enemySpawner.activeEnemies)
-		} else {
-			selectedGrid.cell.Walkable = true
+		if game.gameCursor.selectedTower == crossbow {
+			if canEnemyPath(game) && game.bank.gold >= CROSSBOW_TOWER_COST {
+				newTower := newCrossbowTower(selectedGrid.x, selectedGrid.y)
+				selectedGrid.tower = &newTower
+				selectedGrid.canBuild = false
+				game.towers = append(game.towers, selectedGrid.tower)
+				game.bank.gold -= CROSSBOW_TOWER_COST
+				redrawEnemyPaths(game, game.enemySpawner.activeEnemies)
+			}
+		} else if game.gameCursor.selectedTower == voidLauncher {
+			if canEnemyPath(game) && game.bank.gold >= CROSSBOW_TOWER_COST {
+				newTower := newVoidLauncherTower(selectedGrid.x, selectedGrid.y)
+				selectedGrid.tower = &newTower
+				selectedGrid.canBuild = false
+				game.towers = append(game.towers, selectedGrid.tower)
+				game.bank.gold -= CROSSBOW_TOWER_COST
+				redrawEnemyPaths(game, game.enemySpawner.activeEnemies)
+			} else {
+				selectedGrid.cell.Walkable = true
+			}
 		}
+	}
+}
+
+func (cursor *cursor) selectTowerType() {
+	if ebiten.IsKeyPressed(ebiten.KeyX) {
+		cursor.selectedTower = crossbow
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyC) {
+		cursor.selectedTower = voidLauncher
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyV) {
+		cursor.selectedTower = infernalEye
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyB) {
+		//TODO
 	}
 }

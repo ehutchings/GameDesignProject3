@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/solarlune/resolv"
 )
 
 type effectType int
@@ -9,8 +10,14 @@ type effectType int
 const (
 	damageOnly = effectType(iota)
 	slow
-	pull
+	stun
 )
+
+type effect struct {
+	typeOfEffect effectType
+	duration     int
+	strength     int
+}
 
 type projectile struct {
 	x, y                   int
@@ -19,18 +26,28 @@ type projectile struct {
 	xDirection, yDirection float64
 	inheritedDamage        int
 	speed                  int
-	effect                 effectType
+	effect                 *effect
 	targetEnemy            *enemy
+	AreaOfEffectRadius     float64
+	isHitscan              bool
 }
 
 type projectileManager struct {
 	projectiles []projectile
 }
 
-func (projectile *projectile) Update() {
+func (projectile *projectile) Update(enemies []*enemy) {
 	projectile.updatePosition()
 	if projectile.isOnTarget() {
-		if projectile.targetEnemy != nil { //Enemy has already been defeated by another projectile
+		if projectile.AreaOfEffectRadius != 0 {
+			aoeCollider := resolv.NewCircle(float64(projectile.x-projectile.sprite.Bounds().Dx()/2),
+				float64(projectile.y-projectile.sprite.Bounds().Dy()/2), projectile.AreaOfEffectRadius)
+			for _, enemy := range enemies {
+				if enemy != nil && aoeCollider.DistanceTo(enemy.collider) <= projectile.AreaOfEffectRadius {
+					enemy.health -= projectile.inheritedDamage
+				}
+			}
+		} else if projectile.targetEnemy != nil { //Enemy has already been defeated by another projectile
 			projectile.targetEnemy.health -= projectile.inheritedDamage
 		}
 	}
@@ -72,9 +89,9 @@ func (projectileManager *projectileManager) DrawProjectiles(screen *ebiten.Image
 	}
 }
 
-func (projectileManager *projectileManager) UpdateProjectiles() {
+func (projectileManager *projectileManager) UpdateProjectiles(enemies []*enemy) {
 	for index := len(projectileManager.projectiles) - 1; index >= 0; index-- {
-		projectileManager.projectiles[index].Update()
+		projectileManager.projectiles[index].Update(enemies)
 		if projectileManager.projectiles[index].isOnTarget() {
 			projectileManager.removeProjectileAtIndex(index)
 		}
