@@ -51,7 +51,8 @@ type mainGame struct {
 	ui                      *ebitenui.UI
 	gameCursor              cursor
 	mapGrid                 *grid
-	boxesWithTowers         []*gridBox
+	towers                  []*tower
+	projManager             *projectileManager
 	viewX, viewY, viewSpeed int
 	cameraView              *camera.Camera
 	displayWorld            *ebiten.Image
@@ -75,6 +76,10 @@ func (game *mainGame) Update() error {
 		moveCamera(game)
 		lockCameraInBounds(game)
 		updateEnemies(game)
+		game.projManager.UpdateProjectiles()
+		for _, tower := range game.towers {
+			tower.Update(game.enemySpawner.activeEnemies, game.projManager)
+		}
 	}
 	return nil
 }
@@ -104,9 +109,10 @@ func (game *mainGame) Draw(screen *ebiten.Image) {
 		game.drawOps.GeoM.Translate(float64(game.enemySpawner.x), float64(game.enemySpawner.y))
 		game.displayWorld.DrawImage(game.enemySpawner.sprite, game.drawOps)
 		game.drawOps.GeoM.Reset()
-		for _, box := range game.boxesWithTowers {
-			box.tower.Draw(game.drawOps, game.displayWorld)
+		for _, currentTower := range game.towers {
+			currentTower.Draw(game.drawOps, game.displayWorld)
 		}
+		game.projManager.DrawProjectiles(game.displayWorld, game.drawOps)
 		if len(game.enemySpawner.activeEnemies) != 0 {
 			for _, currentEnemy := range game.enemySpawner.activeEnemies {
 				game.drawOps.GeoM.Translate(float64(currentEnemy.x), float64(currentEnemy.y))
@@ -136,31 +142,32 @@ func main() {
 	stage1Image := makeEbiteImagesFromMap(*stage1)
 	displayWorld := ebiten.NewImage(MAP_SIZE_X, MAP_SIZE_Y)
 	game := mainGame{
-		pathMap:         pathMap,
-		gameCursor:      cursor{selectedBox: nil},
-		mapGrid:         createGrid(),
-		boxesWithTowers: []*gridBox{},
-		viewX:           WINDOW_WIDTH / 2,
-		viewY:           WINDOW_HEIGHT / 2,
-		viewSpeed:       5,
-		cameraView:      camera.Init(WINDOW_WIDTH, WINDOW_HEIGHT),
-		displayWorld:    displayWorld,
-		stage1Map:       stage1,
-		drawableStage1:  ebiten.NewImage(stage1.Width*stage1.TileWidth, stage1.Height*stage1.TileHeight),
-		stage1TileHash:  stage1Image,
-		drawOps:         &ebiten.DrawImageOptions{},
-		font:            LoadFont("Square-Black.ttf", 30),
-		enemySpawner:    newEnemySpawn(0, 0),
-		base:            newPlayerBase(24*TILE_WIDTH, 20*TILE_HEIGHT),
+		pathMap:        pathMap,
+		gameCursor:     cursor{selectedBox: nil},
+		mapGrid:        createGrid(),
+		towers:         []*tower{},
+		projManager:    &projectileManager{make([]*projectile, 0)},
+		viewX:          WINDOW_WIDTH / 2,
+		viewY:          WINDOW_HEIGHT / 2,
+		viewSpeed:      5,
+		cameraView:     camera.Init(WINDOW_WIDTH, WINDOW_HEIGHT),
+		displayWorld:   displayWorld,
+		stage1Map:      stage1,
+		drawableStage1: ebiten.NewImage(stage1.Width*stage1.TileWidth, stage1.Height*stage1.TileHeight),
+		stage1TileHash: stage1Image,
+		drawOps:        &ebiten.DrawImageOptions{},
+		font:           LoadFont("Square-Black.ttf", 30),
+		enemySpawner:   newEnemySpawn(0, 0),
+		base:           newPlayerBase(24*TILE_WIDTH, 20*TILE_HEIGHT),
 	}
+	buildDrawableStage(&game)
+	buildPathMap(&game)
+	pathMaptoMapGrid(&game)
 	game.enemySpawner.activeEnemies = append(game.enemySpawner.activeEnemies, newEnemy(0, 0, 2))
 	for _, currentEnemy := range game.enemySpawner.activeEnemies {
 		newEnemyPath(&game, currentEnemy)
 	}
 	game.ui = &ebitenui.UI{Container: makeUI(&game)}
-	buildDrawableStage(&game)
-	buildPathMap(&game)
-	pathMaptoMapGrid(&game)
 	err = ebiten.RunGame(&game)
 	if err != nil {
 		fmt.Println("Couldn't run game:", err)

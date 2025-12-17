@@ -1,6 +1,8 @@
 package main
 
-import "github.com/hajimehoshi/ebiten/v2"
+import (
+	"github.com/hajimehoshi/ebiten/v2"
+)
 
 type cursor struct {
 	selectedBox *gridBox
@@ -16,7 +18,7 @@ func buildTowerOnClick(game *mainGame) {
 		selectedGrid.cell.Walkable = false
 		if canEnemyPath(game) {
 			selectedGrid.tower = newCrossbowTower(selectedGrid.x, selectedGrid.y)
-			game.boxesWithTowers = append(game.boxesWithTowers, selectedGrid)
+			game.towers = append(game.towers, selectedGrid.tower)
 			redrawEnemyPaths(game, game.enemySpawner.activeEnemies)
 		} else {
 			selectedGrid.cell.Walkable = true

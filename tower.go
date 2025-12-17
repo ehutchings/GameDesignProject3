@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -20,7 +21,7 @@ type tower struct {
 	spritesheet               *ebiten.Image
 	x, y                      int
 	baseDamage                int
-	rangeRadius               int
+	rangeRadius               float64
 	baseCostMod               float64
 	firing                    bool
 	frameLength, currentFrame int
@@ -51,10 +52,10 @@ func (tower *tower) getTarget(enemies []*enemy) {
 	tower.targetEnemy = nil
 	highestDistanceTravelled := 0
 	for _, currentEnemy := range enemies {
-		if tower.rangeCollider.IsIntersecting(currentEnemy.collider) ||
-			currentEnemy.collider.IsContainedBy(tower.rangeCollider) {
+		if tower.rangeCollider.DistanceTo(currentEnemy.collider) < tower.rangeRadius {
 			if currentEnemy.distanceTravelled > highestDistanceTravelled {
 				tower.targetEnemy = currentEnemy
+				fmt.Println("Found enemy")
 			}
 		}
 	}
@@ -62,7 +63,7 @@ func (tower *tower) getTarget(enemies []*enemy) {
 
 func newCrossbowTower(x, y int) *tower {
 	sheet := LoadEmbeddedImage("Towers", "crossbowSpriteSheet.png")
-	radius := 250
+	radius := 200.0
 	return &tower{
 		typeOfTower:   crossbow,
 		spritesheet:   sheet,
@@ -90,7 +91,7 @@ func (tower *tower) fireProjectile(projManager *projectileManager, targetX, targ
 			xDirection:      1,
 			yDirection:      1,
 			inheritedDamage: tower.baseDamage,
-			speed:           8,
+			speed:           10,
 			effect:          damageOnly,
 		}
 		projManager.projectiles = append(projManager.projectiles, &newProjectile)
