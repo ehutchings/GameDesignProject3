@@ -7,7 +7,16 @@ import (
 	"github.com/solarlune/resolv"
 )
 
+type towerType int
+
+const (
+	crossbow = towerType(iota)
+	blackHole
+	infernalEye
+)
+
 type tower struct {
+	typeOfTower               towerType
 	spritesheet               *ebiten.Image
 	x, y                      int
 	baseDamage                int
@@ -16,6 +25,7 @@ type tower struct {
 	firing                    bool
 	frameLength, currentFrame int
 	rangeCollider             *resolv.Circle
+	targetEnemy               *enemy
 }
 
 func (tower *tower) Draw(drawOps *ebiten.DrawImageOptions, screen *ebiten.Image) {
@@ -26,10 +36,23 @@ func (tower *tower) Draw(drawOps *ebiten.DrawImageOptions, screen *ebiten.Image)
 	drawOps.GeoM.Reset()
 }
 
+func (tower *tower) getTarget(enemies []*enemy) {
+	highestDistanceTravelled := 0
+	for _, currentEnemy := range enemies {
+		if tower.rangeCollider.IsIntersecting(currentEnemy.collider) ||
+			currentEnemy.collider.IsContainedBy(tower.rangeCollider) {
+			if currentEnemy.distanceTravelled > highestDistanceTravelled {
+				tower.targetEnemy = currentEnemy
+			}
+		}
+	}
+}
+
 func newCrossbowTower(x, y int) *tower {
 	sheet := LoadEmbeddedImage("Towers", "crossbowSpriteSheet.png")
 	radius := 250
 	return &tower{
+		typeOfTower:   crossbow,
 		spritesheet:   sheet,
 		x:             x,
 		y:             y,

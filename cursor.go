@@ -17,7 +17,7 @@ func buildTowerOnClick(game *mainGame) {
 		if canEnemyPath(game) {
 			selectedGrid.tower = newCrossbowTower(selectedGrid.x, selectedGrid.y)
 			game.boxesWithTowers = append(game.boxesWithTowers, selectedGrid)
-			redrawEnemyPaths(game, game.enemySpawner.enemies)
+			redrawEnemyPaths(game, game.enemySpawner.activeEnemies)
 		} else {
 			selectedGrid.cell.Walkable = true
 		}

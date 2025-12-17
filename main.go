@@ -107,8 +107,8 @@ func (game *mainGame) Draw(screen *ebiten.Image) {
 		for _, box := range game.boxesWithTowers {
 			box.tower.Draw(game.drawOps, game.displayWorld)
 		}
-		if len(game.enemySpawner.enemies) != 0 {
-			for _, currentEnemy := range game.enemySpawner.enemies {
+		if len(game.enemySpawner.activeEnemies) != 0 {
+			for _, currentEnemy := range game.enemySpawner.activeEnemies {
 				game.drawOps.GeoM.Translate(float64(currentEnemy.x), float64(currentEnemy.y))
 				game.displayWorld.DrawImage(currentEnemy.spritesheet, game.drawOps)
 				game.drawOps.GeoM.Reset()
@@ -153,8 +153,8 @@ func main() {
 		enemySpawner:    newEnemySpawn(0, 0),
 		base:            newPlayerBase(24*TILE_WIDTH, 20*TILE_HEIGHT),
 	}
-	game.enemySpawner.enemies = append(game.enemySpawner.enemies, newEnemy(0, 0, 2))
-	for _, currentEnemy := range game.enemySpawner.enemies {
+	game.enemySpawner.activeEnemies = append(game.enemySpawner.activeEnemies, newEnemy(0, 0, 2))
+	for _, currentEnemy := range game.enemySpawner.activeEnemies {
 		newEnemyPath(&game, currentEnemy)
 	}
 	game.ui = &ebitenui.UI{Container: makeUI(&game)}

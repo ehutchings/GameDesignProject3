@@ -9,9 +9,9 @@ import (
 )
 
 type enemySpawn struct {
-	sprite  *ebiten.Image
-	x, y    int
-	enemies []*enemy
+	sprite        *ebiten.Image
+	x, y          int
+	activeEnemies []*enemy
 }
 
 type enemy struct {
@@ -21,15 +21,16 @@ type enemy struct {
 	xDirection, yDirection int
 	path                   *paths.Path
 	collider               *resolv.ConvexPolygon
+	distanceTravelled      int
 }
 
 func newEnemySpawn(x, y int) *enemySpawn {
 	image := LoadEmbeddedImage("", "enemySpawn.png")
 	return &enemySpawn{
-		sprite:  image,
-		x:       x,
-		y:       y,
-		enemies: make([]*enemy, 0),
+		sprite:        image,
+		x:             x,
+		y:             y,
+		activeEnemies: make([]*enemy, 0),
 	}
 }
 
@@ -82,15 +83,17 @@ func (enemy *enemy) Update() {
 			enemy.yDirection = -1
 		}
 		enemy.x += enemy.xDirection * enemy.speed
+		enemy.distanceTravelled += enemy.xDirection * enemy.speed
 		enemy.y += enemy.yDirection * enemy.speed
+		enemy.distanceTravelled += enemy.yDirection * enemy.speed
 		enemy.collider.SetX(float64(enemy.x - TILE_WIDTH/2))
 		enemy.collider.SetY(float64(enemy.y - TILE_HEIGHT/2))
 	}
 }
 
 func updateEnemies(game *mainGame) {
-	if len(game.enemySpawner.enemies) != 0 {
-		for _, currentEnemy := range game.enemySpawner.enemies {
+	if len(game.enemySpawner.activeEnemies) != 0 {
+		for _, currentEnemy := range game.enemySpawner.activeEnemies {
 			currentEnemy.Update()
 		}
 	}
