@@ -19,9 +19,9 @@ type gridBox struct {
 	collider      *resolv.ConvexPolygon
 }
 
-func createGrid() *grid {
+func createGrid() grid {
 	xIndex, yIndex := 0, 0
-	mapGrid := &grid{
+	mapGrid := grid{
 		make([]*gridBox, 0),
 	}
 	for xIndex < MAP_SIZE_X {
@@ -46,6 +46,7 @@ func createGrid() *grid {
 }
 
 func (mapGrid grid) getGridBoxAtCursor(cursor *cursor) {
+	cursor.selectedBox = nil
 	cursorCollider := resolv.NewRectangle(float64(cursor.x), float64(cursor.y), 1, 1)
 	for _, box := range mapGrid.gridBoxes {
 		if cursorCollider.IsContainedBy(box.collider) {

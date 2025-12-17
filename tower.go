@@ -45,7 +45,6 @@ func (tower *tower) Update(enemies []*enemy, projectileManager *projectileManage
 	} else {
 		tower.firing = false
 		tower.currentFrame = 0
-		tower.cooldown = tower.firingDelay
 	}
 }
 
@@ -69,10 +68,10 @@ func (tower *tower) getTarget(enemies []*enemy) {
 	}
 }
 
-func newCrossbowTower(x, y int) *tower {
+func newCrossbowTower(x, y int) tower {
 	sheet := LoadEmbeddedImage("Towers", "crossbowSpriteSheet.png")
-	radius := 200.0
-	return &tower{
+	radius := 300.0
+	return tower{
 		typeOfTower:   crossbow,
 		spritesheet:   sheet,
 		x:             x,
@@ -102,9 +101,9 @@ func (tower *tower) fireProjectile(projManager *projectileManager, targetX, targ
 			xDirection:      1,
 			yDirection:      1,
 			inheritedDamage: tower.baseDamage,
-			speed:           10,
+			speed:           14,
 			effect:          damageOnly,
 		}
-		projManager.projectiles = append(projManager.projectiles, &newProjectile)
+		projManager.projectiles = append(projManager.projectiles, newProjectile)
 	}
 }

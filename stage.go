@@ -32,6 +32,7 @@ type stage struct {
 	drawableStage            *ebiten.Image
 	stageTileHash            map[uint32]*ebiten.Image
 	number                   stageNumber
+	stageWaves               *stageWaves
 	enemySpawnX, enemySpawnY int
 	playerBaseX, playerBaseY int
 }
@@ -82,6 +83,7 @@ func getStages() []*stage {
 		playerBaseX:   24 * TILE_WIDTH,
 		playerBaseY:   20 * TILE_HEIGHT,
 	}
+	stage1.stageWaves = newWavesForStage(60, 5, 3)
 	stage2 := stage{
 		stageMap:      nil,
 		drawableStage: nil,
@@ -92,5 +94,6 @@ func getStages() []*stage {
 		playerBaseX:   23 * TILE_WIDTH,
 		playerBaseY:   3 * TILE_HEIGHT,
 	}
+	stage2.stageWaves = newWavesForStage(60, 5, 3)
 	return []*stage{&stage1, &stage2}
 }

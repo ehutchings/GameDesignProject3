@@ -12,6 +12,8 @@ type enemySpawn struct {
 	sprite        *ebiten.Image
 	x, y          int
 	activeEnemies []*enemy
+	currentWave   *wave
+	intervalCount int
 }
 
 type enemy struct {
@@ -26,13 +28,14 @@ type enemy struct {
 	goldDropped            int
 }
 
-func newEnemySpawn(x, y int) *enemySpawn {
+func newEnemySpawn(currentWave *wave, x, y int) *enemySpawn {
 	image := LoadEmbeddedImage("", "enemySpawn.png")
 	return &enemySpawn{
 		sprite:        image,
 		x:             x,
 		y:             y,
 		activeEnemies: make([]*enemy, 0),
+		currentWave:   currentWave,
 	}
 }
 
@@ -51,10 +54,22 @@ func newEnemy(x, y, speed int) *enemy {
 	}
 }
 
-func newEnemyPath(game *mainGame, enemy *enemy) {
-	startingCell := game.pathMap.Get(game.enemySpawner.x/TILE_WIDTH, game.enemySpawner.y/TILE_HEIGHT)
-	endingCell := game.pathMap.Get(game.base.x/TILE_WIDTH, game.base.y/TILE_HEIGHT)
-	enemy.path = game.pathMap.GetPathFromCells(startingCell, endingCell, false, false)
+func (enemySpawner *enemySpawn) nextEnemyInWave(pathMap *paths.Grid, base *playerBase) {
+	enemySpawner.intervalCount += 1
+	if enemySpawner.intervalCount == enemySpawner.currentWave.spawnInterval {
+		newEnemy := enemySpawner.currentWave.removeEnemyInFront()
+		newEnemy.x = enemySpawner.x
+		newEnemy.y = enemySpawner.y
+		newEnemy.newPath(pathMap, enemySpawner, base)
+		enemySpawner.activeEnemies = append(enemySpawner.activeEnemies, &newEnemy)
+		enemySpawner.intervalCount = 0
+	}
+}
+
+func (enemy *enemy) newPath(pathMap *paths.Grid, enemySpawner *enemySpawn, base *playerBase) {
+	startingCell := pathMap.Get(enemySpawner.x/TILE_WIDTH, enemySpawner.y/TILE_HEIGHT)
+	endingCell := pathMap.Get(base.x/TILE_WIDTH, base.y/TILE_HEIGHT)
+	enemy.path = pathMap.GetPathFromCells(startingCell, endingCell, false, false)
 }
 
 func canEnemyPath(game *mainGame) bool {
@@ -87,15 +102,17 @@ func (enemy *enemy) Update() {
 			enemy.yDirection = -1
 		}
 		enemy.x += enemy.xDirection * enemy.speed
-		enemy.distanceTravelled += enemy.xDirection * enemy.speed
+		enemy.distanceTravelled += int(math.Abs(float64(enemy.xDirection * enemy.speed)))
 		enemy.y += enemy.yDirection * enemy.speed
-		enemy.distanceTravelled += enemy.yDirection * enemy.speed
+		enemy.distanceTravelled += int(math.Abs(float64(enemy.yDirection * enemy.speed)))
 		enemy.collider.SetX(float64(enemy.x - TILE_WIDTH/2))
 		enemy.collider.SetY(float64(enemy.y - TILE_HEIGHT/2))
 	}
 }
 
-func (enemySpawner *enemySpawn) updateEnemies(bank *goldCounter) {
+func (enemySpawner *enemySpawn) updateEnemies(stageWaves *stageWaves, bank *goldCounter,
+	pathMap *paths.Grid, base *playerBase) {
+	enemySpawner.spawnEnemies(stageWaves, pathMap, base)
 	if len(enemySpawner.activeEnemies) != 0 {
 		for index := len(enemySpawner.activeEnemies) - 1; index >= 0; index-- {
 			enemySpawner.activeEnemies[index].Update()
@@ -103,6 +120,16 @@ func (enemySpawner *enemySpawn) updateEnemies(bank *goldCounter) {
 				bank.gold += enemySpawner.activeEnemies[index].goldDropped
 				enemySpawner.removeEnemyAtIndex(index)
 			}
+		}
+	}
+}
+
+func (enemySpawner *enemySpawn) spawnEnemies(stageWaves *stageWaves, pathMap *paths.Grid, base *playerBase) {
+	if len(enemySpawner.currentWave.enemies) > 0 {
+		enemySpawner.nextEnemyInWave(pathMap, base)
+	} else if len(enemySpawner.activeEnemies) == 0 {
+		if len(stageWaves.waves) != 0 {
+			enemySpawner.currentWave = stageWaves.getNextWave()
 		}
 	}
 }

@@ -55,17 +55,17 @@ type mainGame struct {
 	state                   gameState
 	ui                      *ebitenui.UI
 	gameCursor              cursor
-	mapGrid                 *grid
+	mapGrid                 grid
 	towers                  []*tower
-	projManager             *projectileManager
+	projManager             projectileManager
 	viewX, viewY, viewSpeed int
 	cameraView              *camera.Camera
 	displayWorld            *ebiten.Image
 	drawOps                 *ebiten.DrawImageOptions
 	textOps                 *text.DrawOptions
 	font                    font.Face
-	enemySpawner            *enemySpawn
-	base                    *playerBase
+	enemySpawner            enemySpawn
+	base                    playerBase
 	bank                    goldCounter
 	stageManager            stageManager
 	pathMap                 *paths.Grid
@@ -80,12 +80,12 @@ func (game *mainGame) Update() error {
 		}
 		moveCamera(game)
 		lockCameraInBounds(game)
-		game.enemySpawner.updateEnemies(&game.bank)
+		game.enemySpawner.updateEnemies(game.stageManager.currentStage.stageWaves, &game.bank, game.pathMap, &game.base)
 		game.projManager.UpdateProjectiles()
 		for _, tower := range game.towers {
-			tower.Update(game.enemySpawner.activeEnemies, game.projManager)
+			tower.Update(game.enemySpawner.activeEnemies, &game.projManager)
 		}
-		if len(game.enemySpawner.activeEnemies) == 0 && game.stageManager.index < len(game.stageManager.stages) {
+		if len(game.stageManager.currentStage.stageWaves.waves) == 0 && game.stageManager.index < len(game.stageManager.stages) {
 			game.stageManager.rebuildGameForStage(game)
 		}
 	}
@@ -120,12 +120,14 @@ func (game *mainGame) Draw(screen *ebiten.Image) {
 		for _, currentTower := range game.towers {
 			currentTower.Draw(game.drawOps, game.displayWorld)
 		}
+		game.drawOps.GeoM.Reset()
 		game.enemySpawner.drawEnemies(game.displayWorld, game.drawOps)
 		game.projManager.DrawProjectiles(game.displayWorld, game.drawOps)
 		game.cameraView.Follow.H = game.viewY * 2
 		game.cameraView.Follow.W = game.viewX * 2
 		game.cameraView.Draw(game.displayWorld, screen)
 		game.bank.drawCurrentGoldText(screen, game.textOps, game.font)
+		game.drawOps.GeoM.Reset()
 	}
 }
 
@@ -141,10 +143,9 @@ func main() {
 	game := mainGame{
 
 		gameCursor:   cursor{selectedBox: nil},
-		mapGrid:      createGrid(),
 		pathMap:      pathMap,
 		towers:       []*tower{},
-		projManager:  &projectileManager{make([]*projectile, 0)},
+		projManager:  projectileManager{make([]projectile, 0)},
 		viewX:        WINDOW_WIDTH / 2,
 		viewY:        WINDOW_HEIGHT / 2,
 		viewSpeed:    5,
@@ -165,10 +166,6 @@ func main() {
 	game.stageManager.buildDrawableStages()
 	if game.stageManager.goToNextStage {
 		game.stageManager.rebuildGameForStage(&game)
-	}
-	game.enemySpawner.activeEnemies = append(game.enemySpawner.activeEnemies, newEnemy(0, 0, 2))
-	for _, currentEnemy := range game.enemySpawner.activeEnemies {
-		newEnemyPath(&game, currentEnemy)
 	}
 	game.ui = &ebitenui.UI{Container: makeUI(&game)}
 	err := ebiten.RunGame(&game)

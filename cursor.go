@@ -17,7 +17,8 @@ func buildTowerOnClick(game *mainGame) {
 	if selectedGrid != nil && selectedGrid.canBuild == true {
 		selectedGrid.cell.Walkable = false
 		if canEnemyPath(game) && game.bank.gold >= CROSSBOW_TOWER_COST {
-			selectedGrid.tower = newCrossbowTower(selectedGrid.x, selectedGrid.y)
+			newTower := newCrossbowTower(selectedGrid.x, selectedGrid.y)
+			selectedGrid.tower = &newTower
 			selectedGrid.canBuild = false
 			game.towers = append(game.towers, selectedGrid.tower)
 			game.bank.gold -= CROSSBOW_TOWER_COST

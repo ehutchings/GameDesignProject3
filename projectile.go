@@ -24,7 +24,7 @@ type projectile struct {
 }
 
 type projectileManager struct {
-	projectiles []*projectile
+	projectiles []projectile
 }
 
 func (projectile *projectile) Update() {
