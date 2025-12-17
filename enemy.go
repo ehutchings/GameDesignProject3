@@ -22,6 +22,8 @@ type enemy struct {
 	path                   *paths.Path
 	collider               *resolv.ConvexPolygon
 	distanceTravelled      int
+	health                 int
+	goldDropped            int
 }
 
 func newEnemySpawn(x, y int) *enemySpawn {
@@ -41,6 +43,8 @@ func newEnemy(x, y, speed int) *enemy {
 		x:           x,
 		y:           y,
 		speed:       speed,
+		health:      10,
+		goldDropped: 1,
 		xDirection:  0,
 		yDirection:  0,
 		collider:    resolv.NewRectangle(float64(x-TILE_WIDTH/2), float64(y-TILE_WIDTH/2), TILE_WIDTH, TILE_HEIGHT),
@@ -57,7 +61,7 @@ func canEnemyPath(game *mainGame) bool {
 	startingCell := game.pathMap.Get(game.enemySpawner.x/TILE_WIDTH, game.enemySpawner.y/TILE_HEIGHT)
 	endingCell := game.pathMap.Get(game.base.x/TILE_WIDTH, game.base.y/TILE_HEIGHT)
 	path := game.pathMap.GetPathFromCells(startingCell, endingCell, false, false)
-	if path.Length() == 0 {
+	if path == nil || path.Length() == 0 {
 		return false
 	}
 	return true
@@ -91,11 +95,35 @@ func (enemy *enemy) Update() {
 	}
 }
 
-func updateEnemies(game *mainGame) {
-	if len(game.enemySpawner.activeEnemies) != 0 {
-		for _, currentEnemy := range game.enemySpawner.activeEnemies {
-			currentEnemy.Update()
+func (enemySpawner *enemySpawn) updateEnemies(bank *goldCounter) {
+	if len(enemySpawner.activeEnemies) != 0 {
+		for index := len(enemySpawner.activeEnemies) - 1; index >= 0; index-- {
+			enemySpawner.activeEnemies[index].Update()
+			if enemySpawner.activeEnemies[index].health <= 0 {
+				bank.gold += enemySpawner.activeEnemies[index].goldDropped
+				enemySpawner.removeEnemyAtIndex(index)
+			}
 		}
+	}
+}
+
+func (enemy *enemy) Draw(screen *ebiten.Image, drawOps *ebiten.DrawImageOptions) {
+	drawOps.GeoM.Translate(float64(enemy.x), float64(enemy.y))
+	screen.DrawImage(enemy.spritesheet, drawOps)
+	drawOps.GeoM.Reset()
+}
+
+func (enemySpawner *enemySpawn) drawEnemies(screen *ebiten.Image, drawOps *ebiten.DrawImageOptions) {
+	for _, enemy := range enemySpawner.activeEnemies {
+		enemy.Draw(screen, drawOps)
+	}
+}
+
+func (enemySpawner *enemySpawn) removeEnemyAtIndex(index int) {
+	if len(enemySpawner.activeEnemies) >= 2 {
+		enemySpawner.activeEnemies = append(enemySpawner.activeEnemies[:index], enemySpawner.activeEnemies[index+1:]...)
+	} else {
+		enemySpawner.activeEnemies = enemySpawner.activeEnemies[:0]
 	}
 }
 

@@ -30,7 +30,9 @@ type projectileManager struct {
 func (projectile *projectile) Update() {
 	projectile.updatePosition()
 	if projectile.isOnTarget() {
-		//make enemies take damage
+		if projectile.targetEnemy != nil { //Enemy has already been defeated by another projectile
+			projectile.targetEnemy.health -= projectile.inheritedDamage
+		}
 	}
 }
 

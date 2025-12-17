@@ -11,9 +11,11 @@ import (
 	"github.com/ebitenui/ebitenui"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/lafriks/go-tiled"
 	"github.com/solarlune/paths"
 	camera "github.com/tducasse/ebiten-camera"
+	"golang.org/x/image/colornames"
 	"golang.org/x/image/font"
 )
 
@@ -36,6 +38,10 @@ const (
 	MAP_HEIGHT = 25
 
 	BASE_HEALTH = 100
+
+	STARTING_GOLD = 50
+
+	CROSSBOW_TOWER_COST = 15
 )
 
 type gameState int
@@ -60,10 +66,12 @@ type mainGame struct {
 	drawableStage1          *ebiten.Image
 	stage1TileHash          map[uint32]*ebiten.Image
 	drawOps                 *ebiten.DrawImageOptions
+	textOps                 *text.DrawOptions
 	font                    font.Face
 	pathMap                 *paths.Grid
 	enemySpawner            *enemySpawn
 	base                    *playerBase
+	bank                    goldCounter
 }
 
 func (game *mainGame) Update() error {
@@ -75,7 +83,7 @@ func (game *mainGame) Update() error {
 		}
 		moveCamera(game)
 		lockCameraInBounds(game)
-		updateEnemies(game)
+		game.enemySpawner.updateEnemies(&game.bank)
 		game.projManager.UpdateProjectiles()
 		for _, tower := range game.towers {
 			tower.Update(game.enemySpawner.activeEnemies, game.projManager)
@@ -112,17 +120,12 @@ func (game *mainGame) Draw(screen *ebiten.Image) {
 		for _, currentTower := range game.towers {
 			currentTower.Draw(game.drawOps, game.displayWorld)
 		}
+		game.enemySpawner.drawEnemies(game.displayWorld, game.drawOps)
 		game.projManager.DrawProjectiles(game.displayWorld, game.drawOps)
-		if len(game.enemySpawner.activeEnemies) != 0 {
-			for _, currentEnemy := range game.enemySpawner.activeEnemies {
-				game.drawOps.GeoM.Translate(float64(currentEnemy.x), float64(currentEnemy.y))
-				game.displayWorld.DrawImage(currentEnemy.spritesheet, game.drawOps)
-				game.drawOps.GeoM.Reset()
-			}
-		}
 		game.cameraView.Follow.H = game.viewY * 2
 		game.cameraView.Follow.W = game.viewX * 2
 		game.cameraView.Draw(game.displayWorld, screen)
+		game.bank.drawCurrentGoldText(screen, game.textOps, game.font)
 	}
 }
 
@@ -156,9 +159,13 @@ func main() {
 		drawableStage1: ebiten.NewImage(stage1.Width*stage1.TileWidth, stage1.Height*stage1.TileHeight),
 		stage1TileHash: stage1Image,
 		drawOps:        &ebiten.DrawImageOptions{},
+		textOps:        &text.DrawOptions{},
 		font:           LoadFont("Square-Black.ttf", 30),
 		enemySpawner:   newEnemySpawn(0, 0),
 		base:           newPlayerBase(24*TILE_WIDTH, 20*TILE_HEIGHT),
+		bank: goldCounter{
+			gold: STARTING_GOLD, x: WINDOW_WIDTH / 2, y: 10, color: colornames.Gold,
+		},
 	}
 	buildDrawableStage(&game)
 	buildPathMap(&game)

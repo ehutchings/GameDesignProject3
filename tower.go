@@ -77,7 +77,7 @@ func newCrossbowTower(x, y int) *tower {
 		spritesheet:   sheet,
 		x:             x,
 		y:             y,
-		baseDamage:    1,
+		baseDamage:    3,
 		baseCostMod:   1,
 		rangeRadius:   radius,
 		firing:        false,
@@ -95,6 +95,7 @@ func (tower *tower) fireProjectile(projManager *projectileManager, targetX, targ
 		newProjectile := projectile{
 			x:               tower.x,
 			y:               tower.y,
+			targetEnemy:     tower.targetEnemy,
 			targetX:         targetX,
 			targetY:         targetY,
 			sprite:          sprite,

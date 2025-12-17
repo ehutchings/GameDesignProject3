@@ -26,11 +26,12 @@ func createGrid() *grid {
 	}
 	for xIndex < MAP_SIZE_X {
 		newGridBox := gridBox{
-			x:      xIndex,
-			y:      yIndex,
-			tower:  nil,
-			width:  TILE_WIDTH,
-			height: TILE_HEIGHT,
+			x:        xIndex,
+			y:        yIndex,
+			tower:    nil,
+			canBuild: true,
+			width:    TILE_WIDTH,
+			height:   TILE_HEIGHT,
 			collider: resolv.NewRectangle(float64(xIndex+TILE_WIDTH/2), float64(yIndex+TILE_HEIGHT/2),
 				TILE_WIDTH, TILE_HEIGHT),
 		}
