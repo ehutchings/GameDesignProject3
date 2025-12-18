@@ -48,10 +48,19 @@ type gameState int
 const (
 	gameStateStart = gameState(iota)
 	gameStatePlay
+	gameOver
+)
+
+type difficulty int
+
+const (
+	hard = difficulty(iota)
+	easy
 )
 
 type mainGame struct {
 	baseCost                int
+	setDifficulty           difficulty
 	state                   gameState
 	ui                      *ebitenui.UI
 	gameCursor              cursor
@@ -107,6 +116,7 @@ func lockCameraInBounds(game *mainGame) {
 }
 
 func (game *mainGame) Draw(screen *ebiten.Image) {
+	textFace := text.NewGoXFace(game.font)
 	if game.state == gameStateStart {
 		game.ui.Draw(screen)
 	} else {
@@ -124,6 +134,11 @@ func (game *mainGame) Draw(screen *ebiten.Image) {
 		game.drawOps.GeoM.Reset()
 		game.enemySpawner.drawEnemies(game.displayWorld, game.drawOps)
 		game.projManager.DrawProjectiles(game.displayWorld, game.drawOps)
+		game.textOps.GeoM.Translate(float64(game.base.x), float64(game.base.y-20))
+		game.textOps.ColorScale.ScaleWithColor(colornames.White)
+		text.Draw(game.displayWorld, game.base.name, textFace, game.textOps)
+		game.textOps.ColorScale.Reset()
+		game.textOps.GeoM.Reset()
 		game.cameraView.Follow.H = game.viewY * 2
 		game.cameraView.Follow.W = game.viewX * 2
 		game.cameraView.Draw(game.displayWorld, screen)

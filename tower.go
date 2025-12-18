@@ -13,13 +13,7 @@ const (
 	crossbow = towerType(iota)
 	voidLauncher
 	infernalEye
-)
-
-type damageType int
-
-const (
-	firedProjectile = damageType(iota)
-	AreaOfEffect
+	snowflake
 )
 
 type tower struct {
@@ -28,7 +22,6 @@ type tower struct {
 	x, y                      int
 	baseDamage                int
 	rangeRadius               float64
-	baseCostMod               float64
 	firing                    bool
 	firingDelay, cooldown     int
 	frameLength, currentFrame int
@@ -45,7 +38,7 @@ func (tower *tower) Update(enemies []*enemy, projectileManager *projectileManage
 			tower.currentFrame += 1
 		}
 		if tower.cooldown <= 0 {
-			tower.fireProjectile(projectileManager, tower.targetEnemy.x, tower.targetEnemy.y)
+			tower.fireProjectile(projectileManager, tower.targetEnemy.x+TILE_WIDTH/2, tower.targetEnemy.y+TILE_WIDTH/2)
 			tower.cooldown = tower.firingDelay
 			tower.currentFrame = 0
 		}
@@ -75,7 +68,7 @@ func (tower *tower) getTarget(enemies []*enemy) {
 	}
 }
 
-func newCrossbowTower(x, y int) tower {
+func newCrossbowTower(x, y, damageMod int) tower {
 	sheet := LoadEmbeddedImage("Towers", "crossbowSpriteSheet.png")
 	radius := 300.0
 	return tower{
@@ -83,39 +76,37 @@ func newCrossbowTower(x, y int) tower {
 		spritesheet:   sheet,
 		x:             x,
 		y:             y,
-		baseDamage:    3,
-		baseCostMod:   1,
+		baseDamage:    12 * damageMod,
 		rangeRadius:   radius,
 		firing:        false,
 		firingDelay:   60,
 		cooldown:      0,
 		currentFrame:  0,
 		frameLength:   3,
-		rangeCollider: resolv.NewCircle(float64(x-TILE_WIDTH/2), float64(y-TILE_HEIGHT/2), float64(radius)),
+		rangeCollider: resolv.NewCircle(float64(x+TILE_WIDTH/2), float64(y+TILE_HEIGHT/2), radius),
 	}
 }
 
-func newVoidLauncherTower(x, y int) tower {
+func newVoidLauncherTower(x, y, damageMod int) tower {
 	sheet := LoadEmbeddedImage("Towers", "voidLauncherSpriteSheet.png")
-	radius := 200.0
+	radius := 300.0
 	return tower{
 		typeOfTower:   voidLauncher,
 		spritesheet:   sheet,
 		x:             x,
 		y:             y,
-		baseDamage:    2,
-		baseCostMod:   2,
+		baseDamage:    8 * damageMod,
 		rangeRadius:   radius,
 		firing:        false,
 		firingDelay:   120,
 		cooldown:      0,
 		currentFrame:  0,
 		frameLength:   4,
-		rangeCollider: resolv.NewCircle(float64(x-TILE_WIDTH/2), float64(y-TILE_HEIGHT/2), float64(radius)),
+		rangeCollider: resolv.NewCircle(float64(x+TILE_WIDTH/2), float64(y+TILE_HEIGHT/2), radius),
 	}
 }
 
-func newInfernalEyeTower(x, y int) tower {
+func newInfernalEyeTower(x, y, damageMod int) tower {
 	sheet := LoadEmbeddedImage("Towers", "infernalEyeSpriteSheet.png")
 	radius := 350.0
 	return tower{
@@ -123,15 +114,33 @@ func newInfernalEyeTower(x, y int) tower {
 		spritesheet:   sheet,
 		x:             x,
 		y:             y,
-		baseDamage:    1,
-		baseCostMod:   1.5,
+		baseDamage:    2 * damageMod,
 		rangeRadius:   radius,
 		firing:        false,
-		firingDelay:   10,
+		firingDelay:   20,
 		cooldown:      0,
 		currentFrame:  0,
 		frameLength:   4,
-		rangeCollider: resolv.NewCircle(float64(x-TILE_WIDTH/2), float64(y-TILE_HEIGHT/2), float64(radius)),
+		rangeCollider: resolv.NewCircle(float64(x+TILE_WIDTH/2), float64(y+TILE_HEIGHT/2), radius),
+	}
+}
+
+func newSnowflakeTower(x, y, damageMod int) tower {
+	sheet := LoadEmbeddedImage("Towers", "snowflakeSpriteSheet.png")
+	radius := 150.0
+	return tower{
+		typeOfTower:   snowflake,
+		spritesheet:   sheet,
+		x:             x,
+		y:             y,
+		baseDamage:    2 * damageMod,
+		rangeRadius:   radius,
+		firing:        false,
+		firingDelay:   30,
+		cooldown:      0,
+		frameLength:   6,
+		currentFrame:  0,
+		rangeCollider: resolv.NewCircle(float64(x+TILE_WIDTH/2), float64(y+TILE_HEIGHT/2), radius),
 	}
 }
 
@@ -139,8 +148,8 @@ func (tower *tower) fireProjectile(projManager *projectileManager, targetX, targ
 	if tower.typeOfTower == crossbow {
 		sprite := LoadEmbeddedImage("Projectiles", "crossbowBolt.png")
 		newProjectile := projectile{
-			x:               tower.x,
-			y:               tower.y,
+			x:               tower.x + TILE_WIDTH/2,
+			y:               tower.y + TILE_HEIGHT/2,
 			targetEnemy:     tower.targetEnemy,
 			targetX:         targetX,
 			targetY:         targetY,
@@ -149,7 +158,6 @@ func (tower *tower) fireProjectile(projManager *projectileManager, targetX, targ
 			yDirection:      1,
 			inheritedDamage: tower.baseDamage,
 			speed:           14,
-			isHitscan:       false,
 			effect:          nil,
 		}
 		projManager.projectiles = append(projManager.projectiles, newProjectile)
@@ -157,8 +165,8 @@ func (tower *tower) fireProjectile(projManager *projectileManager, targetX, targ
 	if tower.typeOfTower == voidLauncher {
 		sprite := LoadEmbeddedImage("Projectiles", "voidSphere.png")
 		newProjectile := projectile{
-			x:               tower.x,
-			y:               tower.y,
+			x:               tower.x + TILE_WIDTH/2,
+			y:               tower.y + TILE_HEIGHT/2,
 			targetEnemy:     tower.targetEnemy,
 			targetX:         targetX,
 			targetY:         targetY,
@@ -166,22 +174,21 @@ func (tower *tower) fireProjectile(projManager *projectileManager, targetX, targ
 			xDirection:      1,
 			yDirection:      1,
 			inheritedDamage: tower.baseDamage,
-			speed:           8,
-			isHitscan:       false,
+			speed:           10,
 			effect: &effect{
 				typeOfEffect: stun,
-				duration:     60,
+				duration:     30,
 				strength:     0,
 			},
-			AreaOfEffectRadius: 60,
+			AreaOfEffectRadius: 128,
 		}
 		projManager.projectiles = append(projManager.projectiles, newProjectile)
 	}
 	if tower.typeOfTower == infernalEye {
 		sprite := LoadEmbeddedImage("Projectiles", "infernalBeam.png")
 		newProjectile := projectile{
-			x:               tower.x,
-			y:               tower.y,
+			x:               tower.x + TILE_WIDTH/2,
+			y:               tower.y + TILE_HEIGHT/2,
 			targetEnemy:     tower.targetEnemy,
 			targetX:         targetX,
 			targetY:         targetY,
@@ -189,9 +196,36 @@ func (tower *tower) fireProjectile(projManager *projectileManager, targetX, targ
 			xDirection:      1,
 			yDirection:      1,
 			inheritedDamage: tower.baseDamage,
+			speed:           15,
+			effect: &effect{
+				typeOfEffect: burn,
+				duration:     60,
+				interval:     20,
+				strength:     1,
+			},
+		}
+		projManager.projectiles = append(projManager.projectiles, newProjectile)
+	}
+	if tower.typeOfTower == snowflake {
+		newProjectile := projectile{
+			x:               tower.x + TILE_WIDTH/2,
+			y:               tower.y + TILE_HEIGHT/2,
+			targetEnemy:     tower.targetEnemy,
+			targetX:         tower.x + TILE_WIDTH/2,
+			targetY:         tower.y + TILE_HEIGHT/2,
+			sprite:          nil,
+			xDirection:      0,
+			yDirection:      0,
+			inheritedDamage: tower.baseDamage,
 			speed:           0,
-			isHitscan:       true,
-			effect:          nil,
+			effect: &effect{
+				typeOfEffect:    slow,
+				duration:        60,
+				interval:        0,
+				durationElapsed: 0,
+				strength:        2,
+			},
+			AreaOfEffectRadius: tower.rangeRadius,
 		}
 		projManager.projectiles = append(projManager.projectiles, newProjectile)
 	}

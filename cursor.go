@@ -17,22 +17,46 @@ func buildTowerOnClick(game *mainGame) {
 	selectedGrid := game.gameCursor.selectedBox
 	if selectedGrid != nil && selectedGrid.canBuild == true {
 		selectedGrid.cell.Walkable = false
-		if game.gameCursor.selectedTower == crossbow {
-			if canEnemyPath(game) && game.bank.gold >= CROSSBOW_TOWER_COST {
-				newTower := newCrossbowTower(selectedGrid.x, selectedGrid.y)
+		if game.gameCursor.selectedTower == snowflake {
+			if canEnemyPath(game) && game.bank.gold >= game.baseCost*4 {
+				newTower := newSnowflakeTower(selectedGrid.x, selectedGrid.y, int(game.setDifficulty+1))
 				selectedGrid.tower = &newTower
 				selectedGrid.canBuild = false
 				game.towers = append(game.towers, selectedGrid.tower)
-				game.bank.gold -= CROSSBOW_TOWER_COST
+				game.bank.gold -= game.baseCost * 4
 				redrawEnemyPaths(game, game.enemySpawner.activeEnemies)
+			} else {
+				selectedGrid.cell.Walkable = true
+			}
+		} else if game.gameCursor.selectedTower == infernalEye {
+			if canEnemyPath(game) && game.bank.gold >= game.baseCost*2 {
+				newTower := newInfernalEyeTower(selectedGrid.x, selectedGrid.y, int(game.setDifficulty+1))
+				selectedGrid.tower = &newTower
+				selectedGrid.canBuild = false
+				game.towers = append(game.towers, selectedGrid.tower)
+				game.bank.gold -= game.baseCost * 2
+				redrawEnemyPaths(game, game.enemySpawner.activeEnemies)
+			} else {
+				selectedGrid.cell.Walkable = true
+			}
+		} else if game.gameCursor.selectedTower == crossbow {
+			if canEnemyPath(game) && game.bank.gold >= game.baseCost {
+				newTower := newCrossbowTower(selectedGrid.x, selectedGrid.y, int(game.setDifficulty+1))
+				selectedGrid.tower = &newTower
+				selectedGrid.canBuild = false
+				game.towers = append(game.towers, selectedGrid.tower)
+				game.bank.gold -= game.baseCost
+				redrawEnemyPaths(game, game.enemySpawner.activeEnemies)
+			} else {
+				selectedGrid.cell.Walkable = true
 			}
 		} else if game.gameCursor.selectedTower == voidLauncher {
-			if canEnemyPath(game) && game.bank.gold >= CROSSBOW_TOWER_COST {
-				newTower := newVoidLauncherTower(selectedGrid.x, selectedGrid.y)
+			if canEnemyPath(game) && game.bank.gold >= game.baseCost*6 {
+				newTower := newVoidLauncherTower(selectedGrid.x, selectedGrid.y, int(game.setDifficulty+1))
 				selectedGrid.tower = &newTower
 				selectedGrid.canBuild = false
 				game.towers = append(game.towers, selectedGrid.tower)
-				game.bank.gold -= CROSSBOW_TOWER_COST
+				game.bank.gold -= game.baseCost * 6
 				redrawEnemyPaths(game, game.enemySpawner.activeEnemies)
 			} else {
 				selectedGrid.cell.Walkable = true
@@ -52,6 +76,6 @@ func (cursor *cursor) selectTowerType() {
 		cursor.selectedTower = infernalEye
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyB) {
-		//TODO
+		cursor.selectedTower = snowflake
 	}
 }

@@ -16,6 +16,10 @@ func makeUI(game *mainGame) *widget.Container {
 	textInputImage := LoadEmbeddedImage("", "uiImage.png")
 	buttonDefaultImage := LoadEmbeddedImage("", "uiButtonDefault.png")
 	buttonPressedImage := LoadEmbeddedImage("", "uiButtonPressed.png")
+	sliderButtonIdleImage := LoadEmbeddedImage("", "sliderButtonIdle.png")
+	sliderButtonHoverImage := LoadEmbeddedImage("", "sliderButtonHover.png")
+	sliderButtonPressedImage := LoadEmbeddedImage("", "sliderButtonPressed.png")
+	sliderTrackImage := LoadEmbeddedImage("", "sliderTrack.png")
 	rootContainer := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewRowLayout(
 			widget.RowLayoutOpts.Padding(widget.NewInsetsSimple(100)),
@@ -88,6 +92,53 @@ func makeUI(game *mainGame) *widget.Container {
 			Left:   10,
 			Right:  10,
 		}))
+	difficultyText := "Difficulty: Hard"
+	difficultyLabel := widget.NewLabel(
+		widget.LabelOpts.LabelColor(&widget.LabelColor{
+			Idle:     colornames.White,
+			Disabled: colornames.Gray,
+		}),
+		widget.LabelOpts.LabelFace(&textFont))
+
+	difficultySlider := widget.NewSlider(
+		widget.SliderOpts.Orientation(widget.DirectionHorizontal),
+		widget.SliderOpts.MinMax(0, 1),
+		widget.SliderOpts.InitialCurrent(0),
+		widget.SliderOpts.WidgetOpts(
+			widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+				Position:  0,
+				Stretch:   true,
+				MaxWidth:  0,
+				MaxHeight: 0,
+			}),
+			widget.WidgetOpts.MinSize(6, 200)),
+		widget.SliderOpts.Images(&widget.SliderTrackImage{
+			Idle:  image.NewNineSliceBorder(sliderTrackImage, 20),
+			Hover: image.NewNineSliceBorder(sliderTrackImage, 20),
+		}, &widget.ButtonImage{
+			Idle:    image.NewNineSliceBorder(sliderButtonIdleImage, 20),
+			Hover:   image.NewNineSliceBorder(sliderButtonHoverImage, 20),
+			Pressed: image.NewNineSliceBorder(sliderButtonPressedImage, 20),
+		}),
+		widget.SliderOpts.FixedHandleSize(12),
+		widget.SliderOpts.TrackOffset(0),
+		widget.SliderOpts.PageSizeFunc(func() int {
+			return 1
+		}),
+		widget.SliderOpts.ChangedHandler(func(args *widget.SliderChangedEventArgs) {
+			if args.Current == 0 {
+				difficultyLabel.Label = "Difficulty: Hard"
+			} else if args.Current == 1 {
+				difficultyLabel.Label = "Difficulty: Easy"
+			}
+		}),
+	)
+	if difficultySlider.Current == 0 {
+		difficultyLabel.Label = "Difficulty: Hard"
+	} else if difficultySlider.Current == 1 {
+		difficultyLabel.Label = "Difficulty: Easy"
+	}
+	difficultyLabel.Label = difficultyText
 
 	startGame := func(args *widget.ButtonClickedEventArgs) {
 		baseTowerCost, _ := strconv.ParseInt(basePriceInput.GetText(), 10, 64)
@@ -96,6 +147,11 @@ func makeUI(game *mainGame) *widget.Container {
 			game.state = gameStatePlay
 			game.base.name = playerName
 			game.baseCost = int(baseTowerCost)
+			if difficultySlider.Current == 0 {
+				game.setDifficulty = hard
+			} else if difficultySlider.Current == 1 {
+				game.setDifficulty = easy
+			}
 		}
 	}
 
@@ -127,6 +183,8 @@ func makeUI(game *mainGame) *widget.Container {
 	rootContainer.AddChild(basePriceInput)
 	rootContainer.AddChild(playerNameInputLabel)
 	rootContainer.AddChild(playerNameInput)
+	rootContainer.AddChild(difficultySlider)
+	rootContainer.AddChild(difficultyLabel)
 	buttonContainer.AddChild(button)
 	rootContainer.AddChild(buttonContainer)
 	return rootContainer

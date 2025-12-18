@@ -19,12 +19,14 @@ type enemySpawn struct {
 type enemy struct {
 	spritesheet            *ebiten.Image
 	x, y                   int
+	baseSpeed              int
 	speed                  int
 	xDirection, yDirection int
 	path                   *paths.Path
 	collider               *resolv.ConvexPolygon
 	distanceTravelled      int
 	health                 int
+	activeEffects          []*effect
 	goldDropped            int
 }
 
@@ -42,15 +44,17 @@ func newEnemySpawn(currentWave *wave, x, y int) *enemySpawn {
 func newEnemy(x, y, speed int) *enemy {
 	image := LoadEmbeddedImage("", "enemy.png")
 	return &enemy{
-		spritesheet: image,
-		x:           x,
-		y:           y,
-		speed:       speed,
-		health:      10,
-		goldDropped: 1,
-		xDirection:  0,
-		yDirection:  0,
-		collider:    resolv.NewRectangle(float64(x-TILE_WIDTH/2), float64(y-TILE_WIDTH/2), TILE_WIDTH, TILE_HEIGHT),
+		spritesheet:   image,
+		x:             x,
+		y:             y,
+		baseSpeed:     speed,
+		speed:         speed,
+		health:        50,
+		goldDropped:   1,
+		xDirection:    0,
+		yDirection:    0,
+		collider:      resolv.NewRectangle(float64(x+TILE_WIDTH/2), float64(y+TILE_WIDTH/2), TILE_WIDTH, TILE_HEIGHT),
+		activeEffects: []*effect{},
 	}
 }
 
@@ -83,6 +87,7 @@ func canEnemyPath(game *mainGame) bool {
 }
 
 func (enemy *enemy) Update() {
+	enemy.processEffects()
 	if enemy.path != nil && enemy.path.Length() > 0 {
 		currentCell := enemy.path.Current()
 		if math.Abs(float64(currentCell.X*TILE_WIDTH)-float64(enemy.x)) <= 2 &&
@@ -105,8 +110,50 @@ func (enemy *enemy) Update() {
 		enemy.distanceTravelled += int(math.Abs(float64(enemy.xDirection * enemy.speed)))
 		enemy.y += enemy.yDirection * enemy.speed
 		enemy.distanceTravelled += int(math.Abs(float64(enemy.yDirection * enemy.speed)))
-		enemy.collider.SetX(float64(enemy.x - TILE_WIDTH/2))
-		enemy.collider.SetY(float64(enemy.y - TILE_HEIGHT/2))
+		enemy.collider.SetX(float64(enemy.x + TILE_WIDTH/2))
+		enemy.collider.SetY(float64(enemy.y + TILE_HEIGHT/2))
+	}
+}
+
+func (enemy *enemy) processEffects() {
+	if len(enemy.activeEffects) > 0 {
+		for index := len(enemy.activeEffects) - 1; index >= 0; index-- {
+			currentEffect := enemy.activeEffects[index]
+			if currentEffect.typeOfEffect == stun {
+				enemy.speed = 0
+				currentEffect.durationElapsed += 1
+				if currentEffect.durationElapsed >= currentEffect.duration {
+					enemy.speed = enemy.baseSpeed
+					enemy.removeEffectAtIndex(index)
+				}
+			}
+			if currentEffect.typeOfEffect == slow {
+				enemy.speed = enemy.baseSpeed / currentEffect.strength
+				currentEffect.durationElapsed += 1
+				if currentEffect.durationElapsed >= currentEffect.duration {
+					enemy.speed = enemy.baseSpeed
+					enemy.removeEffectAtIndex(index)
+				}
+			}
+			if currentEffect.typeOfEffect == burn {
+				currentEffect.durationElapsed += 1
+				if currentEffect.durationElapsed%currentEffect.interval == 0 {
+					enemy.health -= int(currentEffect.strength)
+				}
+				if currentEffect.durationElapsed >= currentEffect.duration {
+					enemy.speed = enemy.baseSpeed
+					enemy.removeEffectAtIndex(index)
+				}
+			}
+		}
+	}
+}
+
+func (enemy *enemy) removeEffectAtIndex(index int) {
+	if len(enemy.activeEffects) >= 2 {
+		enemy.activeEffects = append(enemy.activeEffects[:index], enemy.activeEffects[index+1:]...)
+	} else {
+		enemy.activeEffects = enemy.activeEffects[:0]
 	}
 }
 
