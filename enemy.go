@@ -18,6 +18,13 @@ const (
 	right
 )
 
+type enemyClass int
+
+const (
+	regular = enemyClass(iota)
+	fast
+)
+
 type enemySpawn struct {
 	sprite        *ebiten.Image
 	x, y          int
@@ -29,6 +36,7 @@ type enemySpawn struct {
 
 type enemy struct {
 	spritesheet                   *ebiten.Image
+	enemyClass                    enemyClass
 	frameLength, currentFrame     int
 	frameDelay, elapsedFrameDelay int
 	x, y                          int
@@ -60,6 +68,7 @@ func newRegularEnemy(x, y int) *enemy {
 	spriteSheet := LoadEmbeddedImage("Enemies", "enemySpriteSheet.png")
 	return &enemy{
 		spritesheet:   spriteSheet,
+		enemyClass:    regular,
 		frameLength:   2,
 		frameDelay:    16,
 		x:             x,
@@ -79,6 +88,7 @@ func newStrongRegularEnemy(x, y int) *enemy {
 	spriteSheet := LoadEmbeddedImage("Enemies", "strongEnemySpriteSheet.png")
 	return &enemy{
 		spritesheet:   spriteSheet,
+		enemyClass:    regular,
 		frameLength:   2,
 		frameDelay:    16,
 		x:             x,
@@ -98,6 +108,7 @@ func newStrongFastEnemy(x, y int) *enemy {
 	spriteSheet := LoadEmbeddedImage("Enemies", "strongFastGoblinSpriteSheet.png")
 	return &enemy{
 		spritesheet:   spriteSheet,
+		enemyClass:    fast,
 		frameLength:   2,
 		frameDelay:    12,
 		x:             x,
@@ -117,6 +128,7 @@ func newFastEnemy(x, y int) *enemy {
 	spriteSheet := LoadEmbeddedImage("Enemies", "fastGoblinSpriteSheet.png")
 	return &enemy{
 		spritesheet:   spriteSheet,
+		enemyClass:    fast,
 		frameLength:   2,
 		frameDelay:    12,
 		x:             x,
@@ -241,7 +253,9 @@ func (enemy *enemy) processEffects() {
 				}
 			}
 			if currentEffect.typeOfEffect == slow {
-				enemy.speed = enemy.baseSpeed / currentEffect.strength
+				if enemy.speed != 0 {
+					enemy.speed = enemy.baseSpeed / currentEffect.strength
+				}
 				currentEffect.durationElapsed += 1
 				if currentEffect.durationElapsed >= currentEffect.duration {
 					enemy.speed = enemy.baseSpeed
@@ -271,18 +285,28 @@ func (enemy *enemy) removeEffectAtIndex(index int) {
 }
 
 func (enemySpawner *enemySpawn) updateEnemies(stageWaves *stageWaves, bank *goldCounter,
-	pathMap *paths.Grid, base *playerBase) {
+	pathMap *paths.Grid, base *playerBase, audioManager *audioManager) {
 	enemySpawner.spawnEnemies(stageWaves, pathMap, base)
 	if len(enemySpawner.activeEnemies) != 0 {
 		for index := len(enemySpawner.activeEnemies) - 1; index >= 0; index-- {
 			enemySpawner.activeEnemies[index].Update()
 			if enemySpawner.activeEnemies[index].health <= 0 {
 				bank.gold += enemySpawner.activeEnemies[index].goldDropped
+				if enemySpawner.activeEnemies[index].enemyClass == regular {
+					audioManager.playRegularEnemyDeathSound()
+				} else if enemySpawner.activeEnemies[index].enemyClass == fast {
+					audioManager.playFastEnemyDeathSound()
+				}
 				enemySpawner.removeEnemyAtIndex(index)
 				continue
 			}
 			if enemySpawner.activeEnemies[index].hasReachedBase(base.x, base.y) {
 				base.health -= enemySpawner.activeEnemies[index].health
+				if enemySpawner.activeEnemies[index].enemyClass == regular {
+					audioManager.playRegularEnemyDeathSound()
+				} else if enemySpawner.activeEnemies[index].enemyClass == fast {
+					audioManager.playFastEnemyDeathSound()
+				}
 				enemySpawner.removeEnemyAtIndex(index)
 			}
 		}

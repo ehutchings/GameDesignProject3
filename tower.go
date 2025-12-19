@@ -29,7 +29,7 @@ type tower struct {
 	targetEnemy               *enemy
 }
 
-func (tower *tower) Update(enemies []*enemy, projectileManager *projectileManager) {
+func (tower *tower) Update(enemies []*enemy, projectileManager *projectileManager, audioManager *audioManager) {
 	tower.getTarget(enemies)
 	if tower.targetEnemy != nil {
 		tower.firing = true
@@ -39,6 +39,15 @@ func (tower *tower) Update(enemies []*enemy, projectileManager *projectileManage
 		}
 		if tower.cooldown <= 0 {
 			tower.fireProjectile(projectileManager, tower.targetEnemy.x+TILE_WIDTH/2, tower.targetEnemy.y+TILE_WIDTH/2)
+			if tower.typeOfTower == voidLauncher {
+				audioManager.playVoidLauncherSound()
+			} else if tower.typeOfTower == snowflake {
+				audioManager.playSnowflakeSound()
+			} else if tower.typeOfTower == infernalEye {
+				audioManager.playInfernalEyeSound()
+			} else if tower.typeOfTower == crossbow {
+				audioManager.playCrossbowSound()
+			}
 			tower.cooldown = tower.firingDelay
 			tower.currentFrame = 0
 		}

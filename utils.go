@@ -62,8 +62,8 @@ func makeEbiteImagesFromMap(tiledMap tiled.Map) map[uint32]*ebiten.Image {
 	return idToImage
 }
 
-func LoadWav(name string, context *audio.Context) *audio.Player {
-	thunderFile, err := os.Open(name)
+func LoadEmbeddedWav(name string, context *audio.Context) *audio.Player {
+	thunderFile, err := EmbeddedAssets.Open(path.Join("assets", "Sounds", name))
 	if err != nil {
 		fmt.Println("Error Loading sound: ", err)
 	}

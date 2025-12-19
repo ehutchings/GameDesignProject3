@@ -10,6 +10,7 @@ import (
 
 	"github.com/ebitenui/ebitenui"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/solarlune/paths"
@@ -40,7 +41,8 @@ const (
 
 	BASE_HEALTH = 100
 
-	STARTING_GOLD = 50
+	STARTING_GOLD   = 50
+	SoundSampleRate = 48000
 )
 
 type gameState int
@@ -59,6 +61,8 @@ const (
 )
 
 type mainGame struct {
+	audioContext                     *audio.Context
+	audioManager                     audioManager
 	baseCost                         int
 	setDifficulty                    difficulty
 	state                            gameState
@@ -98,14 +102,16 @@ func (game *mainGame) Update() error {
 		} else {
 			game.message = ""
 		}
-		game.enemySpawner.updateEnemies(game.stageManager.currentStage.stageWaves, &game.bank, game.pathMap, &game.base)
+		game.enemySpawner.updateEnemies(game.stageManager.currentStage.stageWaves, &game.bank, game.pathMap, &game.base,
+			&game.audioManager)
 		if game.base.health <= 0 {
 			game.state = gameOver
+			game.audioManager.playDefeatSound()
 			game.gameOverMessage = "GAME OVER"
 		}
 		game.projManager.UpdateProjectiles(game.enemySpawner.activeEnemies)
 		for _, tower := range game.towers {
-			tower.Update(game.enemySpawner.activeEnemies, &game.projManager)
+			tower.Update(game.enemySpawner.activeEnemies, &game.projManager, &game.audioManager)
 		}
 		if len(game.stageManager.currentStage.stageWaves.waves) == 0 && game.stageManager.index < len(game.stageManager.stages) &&
 			len(game.enemySpawner.currentWave.enemies) == 0 && len(game.enemySpawner.activeEnemies) == 0 {
@@ -120,8 +126,10 @@ func (game *mainGame) Update() error {
 			len(game.enemySpawner.currentWave.enemies) == 0 && len(game.enemySpawner.activeEnemies) == 0 {
 			game.state = gameOver
 			if game.base.health <= 0 {
+				game.audioManager.playDefeatSound()
 				game.gameOverMessage = "GAME OVER"
 			} else {
+				game.audioManager.playVictorySound()
 				game.gameOverMessage = "YOU WIN"
 			}
 		}
@@ -198,12 +206,22 @@ func (game *mainGame) Layout(outsideWidth, outsideHeight int) (int, int) {
 }
 
 func main() {
-
+	soundContext := audio.NewContext(SoundSampleRate)
 	pathMap := paths.NewGrid(25, 25, TILE_WIDTH, TILE_HEIGHT)
 	ebiten.SetWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT)
 	displayWorld := ebiten.NewImage(MAP_SIZE_X, MAP_SIZE_Y)
 	game := mainGame{
-
+		audioContext: soundContext,
+		audioManager: audioManager{
+			regularEnemySoundPlayer: LoadEmbeddedWav("BigGoblinDeath.wav", soundContext),
+			fastEnemySoundPlayer:    LoadEmbeddedWav("GoblinDeath2.wav", soundContext),
+			voidLauncherSoundPlayer: LoadEmbeddedWav("BlackholeLaunch.wav", soundContext),
+			infernalEyeSoundPlayer:  LoadEmbeddedWav("EyeShoot.wav", soundContext),
+			crossbowSoundPlayer:     LoadEmbeddedWav("CrossbowFire.wav", soundContext),
+			snowflakeSoundPlayer:    LoadEmbeddedWav("SnowflakeShoot.wav", soundContext),
+			victorySoundPlayer:      LoadEmbeddedWav("Win.wav", soundContext),
+			defeatSoundPlayer:       LoadEmbeddedWav("Lose.wav", soundContext),
+		},
 		gameCursor:   cursor{selectedBox: nil},
 		pathMap:      pathMap,
 		towers:       []*tower{},
