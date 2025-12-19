@@ -89,7 +89,7 @@ func newCrossbowTower(x, y, damageMod int) tower {
 
 func newVoidLauncherTower(x, y, damageMod int) tower {
 	sheet := LoadEmbeddedImage("Towers", "voidLauncherSpriteSheet.png")
-	radius := 300.0
+	radius := 250.0
 	return tower{
 		typeOfTower:   voidLauncher,
 		spritesheet:   sheet,

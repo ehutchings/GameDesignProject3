@@ -1,11 +1,21 @@
 package main
 
 import (
+	"image"
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/solarlune/paths"
 	"github.com/solarlune/resolv"
+)
+
+type direction int
+
+const (
+	up = direction(iota)
+	down
+	left
+	right
 )
 
 type enemySpawn struct {
@@ -14,43 +24,107 @@ type enemySpawn struct {
 	activeEnemies []*enemy
 	currentWave   *wave
 	intervalCount int
+	initialDelay  int
 }
 
 type enemy struct {
-	spritesheet            *ebiten.Image
-	x, y                   int
-	baseSpeed              int
-	speed                  int
-	xDirection, yDirection int
-	path                   *paths.Path
-	collider               *resolv.ConvexPolygon
-	distanceTravelled      int
-	health                 int
-	activeEffects          []*effect
-	goldDropped            int
+	spritesheet                   *ebiten.Image
+	frameLength, currentFrame     int
+	frameDelay, elapsedFrameDelay int
+	x, y                          int
+	baseSpeed                     int
+	speed                         int
+	xDirection, yDirection        int
+	facingDirection               direction
+	path                          *paths.Path
+	collider                      *resolv.ConvexPolygon
+	distanceTravelled             int
+	health                        int
+	activeEffects                 []*effect
+	goldDropped                   int
 }
 
 func newEnemySpawn(currentWave *wave, x, y int) *enemySpawn {
-	image := LoadEmbeddedImage("", "enemySpawn.png")
+	sprite := LoadEmbeddedImage("", "enemySpawn.png")
 	return &enemySpawn{
-		sprite:        image,
+		sprite:        sprite,
 		x:             x,
 		y:             y,
 		activeEnemies: make([]*enemy, 0),
 		currentWave:   currentWave,
+		initialDelay:  600,
 	}
 }
 
-func newEnemy(x, y, speed int) *enemy {
-	image := LoadEmbeddedImage("", "enemy.png")
+func newRegularEnemy(x, y int) *enemy {
+	spriteSheet := LoadEmbeddedImage("Enemies", "enemySpriteSheet.png")
 	return &enemy{
-		spritesheet:   image,
+		spritesheet:   spriteSheet,
+		frameLength:   2,
+		frameDelay:    16,
 		x:             x,
 		y:             y,
-		baseSpeed:     speed,
-		speed:         speed,
+		baseSpeed:     2,
+		speed:         2,
 		health:        50,
-		goldDropped:   1,
+		goldDropped:   3,
+		xDirection:    0,
+		yDirection:    0,
+		collider:      resolv.NewRectangle(float64(x+TILE_WIDTH/2), float64(y+TILE_WIDTH/2), TILE_WIDTH, TILE_HEIGHT),
+		activeEffects: []*effect{},
+	}
+}
+
+func newStrongRegularEnemy(x, y int) *enemy {
+	spriteSheet := LoadEmbeddedImage("Enemies", "strongEnemySpriteSheet.png")
+	return &enemy{
+		spritesheet:   spriteSheet,
+		frameLength:   2,
+		frameDelay:    16,
+		x:             x,
+		y:             y,
+		baseSpeed:     2,
+		speed:         2,
+		health:        150,
+		goldDropped:   15,
+		xDirection:    0,
+		yDirection:    0,
+		collider:      resolv.NewRectangle(float64(x+TILE_WIDTH/2), float64(y+TILE_WIDTH/2), TILE_WIDTH, TILE_HEIGHT),
+		activeEffects: []*effect{},
+	}
+}
+
+func newStrongFastEnemy(x, y int) *enemy {
+	spriteSheet := LoadEmbeddedImage("Enemies", "strongFastGoblinSpriteSheet.png")
+	return &enemy{
+		spritesheet:   spriteSheet,
+		frameLength:   2,
+		frameDelay:    16,
+		x:             x,
+		y:             y,
+		baseSpeed:     4,
+		speed:         4,
+		health:        75,
+		goldDropped:   25,
+		xDirection:    0,
+		yDirection:    0,
+		collider:      resolv.NewRectangle(float64(x+TILE_WIDTH/2), float64(y+TILE_WIDTH/2), TILE_WIDTH, TILE_HEIGHT),
+		activeEffects: []*effect{},
+	}
+}
+
+func newFastEnemy(x, y int) *enemy {
+	spriteSheet := LoadEmbeddedImage("Enemies", "fastGoblinSpriteSheet.png")
+	return &enemy{
+		spritesheet:   spriteSheet,
+		frameLength:   2,
+		frameDelay:    12,
+		x:             x,
+		y:             y,
+		baseSpeed:     4,
+		speed:         4,
+		health:        25,
+		goldDropped:   8,
 		xDirection:    0,
 		yDirection:    0,
 		collider:      resolv.NewRectangle(float64(x+TILE_WIDTH/2), float64(y+TILE_WIDTH/2), TILE_WIDTH, TILE_HEIGHT),
@@ -59,14 +133,18 @@ func newEnemy(x, y, speed int) *enemy {
 }
 
 func (enemySpawner *enemySpawn) nextEnemyInWave(pathMap *paths.Grid, base *playerBase) {
-	enemySpawner.intervalCount += 1
-	if enemySpawner.intervalCount == enemySpawner.currentWave.spawnInterval {
-		newEnemy := enemySpawner.currentWave.removeEnemyInFront()
-		newEnemy.x = enemySpawner.x
-		newEnemy.y = enemySpawner.y
-		newEnemy.newPath(pathMap, enemySpawner, base)
-		enemySpawner.activeEnemies = append(enemySpawner.activeEnemies, &newEnemy)
-		enemySpawner.intervalCount = 0
+	if enemySpawner.initialDelay > 0 {
+		enemySpawner.initialDelay--
+	} else {
+		enemySpawner.intervalCount += 1
+		if enemySpawner.intervalCount == enemySpawner.currentWave.spawnInterval {
+			newEnemy := enemySpawner.currentWave.removeEnemyInFront()
+			newEnemy.x = enemySpawner.x
+			newEnemy.y = enemySpawner.y
+			newEnemy.newPath(pathMap, enemySpawner, base)
+			enemySpawner.activeEnemies = append(enemySpawner.activeEnemies, &newEnemy)
+			enemySpawner.intervalCount = 0
+		}
 	}
 }
 
@@ -112,7 +190,42 @@ func (enemy *enemy) Update() {
 		enemy.distanceTravelled += int(math.Abs(float64(enemy.yDirection * enemy.speed)))
 		enemy.collider.SetX(float64(enemy.x + TILE_WIDTH/2))
 		enemy.collider.SetY(float64(enemy.y + TILE_HEIGHT/2))
+		enemy.setDirection()
+		if enemy.speed != 0 {
+			enemy.elapsedFrameDelay += 1
+			if enemy.elapsedFrameDelay == enemy.frameDelay {
+				enemy.currentFrame += 1
+				enemy.elapsedFrameDelay = 0
+			}
+			if enemy.currentFrame >= enemy.frameLength {
+				enemy.currentFrame = 0
+			}
+		}
 	}
+}
+
+func (enemy *enemy) setDirection() {
+	switch enemy.xDirection {
+	case -1:
+		enemy.facingDirection = left
+	case 1:
+		enemy.facingDirection = right
+	}
+	switch enemy.yDirection {
+	case -1:
+		enemy.facingDirection = up
+	case 1:
+		enemy.facingDirection = down
+	}
+}
+
+func (enemy *enemy) hasReachedBase(baseX, baseY int) bool {
+	if enemy.x >= baseX && enemy.x <= baseX+TILE_WIDTH {
+		if enemy.y >= baseY && enemy.y <= baseY+TILE_HEIGHT {
+			return true
+		}
+	}
+	return false
 }
 
 func (enemy *enemy) processEffects() {
@@ -166,6 +279,11 @@ func (enemySpawner *enemySpawn) updateEnemies(stageWaves *stageWaves, bank *gold
 			if enemySpawner.activeEnemies[index].health <= 0 {
 				bank.gold += enemySpawner.activeEnemies[index].goldDropped
 				enemySpawner.removeEnemyAtIndex(index)
+				continue
+			}
+			if enemySpawner.activeEnemies[index].hasReachedBase(base.x, base.y) {
+				base.health -= enemySpawner.activeEnemies[index].health
+				enemySpawner.removeEnemyAtIndex(index)
 			}
 		}
 	}
@@ -183,7 +301,10 @@ func (enemySpawner *enemySpawn) spawnEnemies(stageWaves *stageWaves, pathMap *pa
 
 func (enemy *enemy) Draw(screen *ebiten.Image, drawOps *ebiten.DrawImageOptions) {
 	drawOps.GeoM.Translate(float64(enemy.x), float64(enemy.y))
-	screen.DrawImage(enemy.spritesheet, drawOps)
+	frameX := enemy.currentFrame * TILE_WIDTH
+	frameY := int(enemy.facingDirection) * TILE_WIDTH
+	screen.DrawImage(enemy.spritesheet.SubImage(image.Rect(frameX, frameY, frameX+TILE_WIDTH,
+		frameY+TILE_HEIGHT)).(*ebiten.Image), drawOps)
 	drawOps.GeoM.Reset()
 }
 

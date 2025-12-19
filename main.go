@@ -6,6 +6,7 @@ package main
 import (
 	"embed"
 	"fmt"
+	"strconv"
 
 	"github.com/ebitenui/ebitenui"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -23,6 +24,7 @@ var EmbeddedAssets embed.FS
 const (
 	stage1Path = "stage1.tmx"
 	stage2Path = "stage2.tmx"
+	stage3Path = "stage3.tmx"
 
 	WINDOW_WIDTH  = 800
 	WINDOW_HEIGHT = 800
@@ -39,8 +41,6 @@ const (
 	BASE_HEALTH = 100
 
 	STARTING_GOLD = 50
-
-	CROSSBOW_TOWER_COST = 15
 )
 
 type gameState int
@@ -59,25 +59,28 @@ const (
 )
 
 type mainGame struct {
-	baseCost                int
-	setDifficulty           difficulty
-	state                   gameState
-	ui                      *ebitenui.UI
-	gameCursor              cursor
-	mapGrid                 grid
-	towers                  []*tower
-	projManager             projectileManager
-	viewX, viewY, viewSpeed int
-	cameraView              *camera.Camera
-	displayWorld            *ebiten.Image
-	drawOps                 *ebiten.DrawImageOptions
-	textOps                 *text.DrawOptions
-	font                    font.Face
-	enemySpawner            enemySpawn
-	base                    playerBase
-	bank                    goldCounter
-	stageManager            stageManager
-	pathMap                 *paths.Grid
+	baseCost                         int
+	setDifficulty                    difficulty
+	state                            gameState
+	gameOverMessage                  string
+	message                          string
+	ui                               *ebitenui.UI
+	gameCursor                       cursor
+	mapGrid                          grid
+	towers                           []*tower
+	projManager                      projectileManager
+	viewX, viewY, viewSpeed          int
+	cameraView                       *camera.Camera
+	displayWorld                     *ebiten.Image
+	drawOps                          *ebiten.DrawImageOptions
+	textOps                          *text.DrawOptions
+	font                             font.Face
+	enemySpawner                     enemySpawn
+	base                             playerBase
+	bank                             goldCounter
+	stageManager                     stageManager
+	pathMap                          *paths.Grid
+	stageTransitionDelay, delayCount int
 }
 
 func (game *mainGame) Update() error {
@@ -90,13 +93,37 @@ func (game *mainGame) Update() error {
 		}
 		moveCamera(game)
 		lockCameraInBounds(game)
+		if game.enemySpawner.initialDelay > 0 {
+			game.message = "First wave starting in: " + strconv.Itoa(game.enemySpawner.initialDelay)
+		} else {
+			game.message = ""
+		}
 		game.enemySpawner.updateEnemies(game.stageManager.currentStage.stageWaves, &game.bank, game.pathMap, &game.base)
+		if game.base.health <= 0 {
+			game.state = gameOver
+			game.gameOverMessage = "GAME OVER"
+		}
 		game.projManager.UpdateProjectiles(game.enemySpawner.activeEnemies)
 		for _, tower := range game.towers {
 			tower.Update(game.enemySpawner.activeEnemies, &game.projManager)
 		}
-		if len(game.stageManager.currentStage.stageWaves.waves) == 0 && game.stageManager.index < len(game.stageManager.stages) {
-			game.stageManager.rebuildGameForStage(game)
+		if len(game.stageManager.currentStage.stageWaves.waves) == 0 && game.stageManager.index < len(game.stageManager.stages) &&
+			len(game.enemySpawner.currentWave.enemies) == 0 && len(game.enemySpawner.activeEnemies) == 0 {
+			game.message = "Moving to next stage..."
+			game.delayCount += 1
+			if game.delayCount >= game.stageTransitionDelay {
+				game.stageManager.rebuildGameForStage(game)
+				game.delayCount = 0
+				game.message = ""
+			}
+		} else if len(game.stageManager.currentStage.stageWaves.waves) == 0 && game.stageManager.index == len(game.stageManager.stages) &&
+			len(game.enemySpawner.currentWave.enemies) == 0 && len(game.enemySpawner.activeEnemies) == 0 {
+			game.state = gameOver
+			if game.base.health <= 0 {
+				game.gameOverMessage = "GAME OVER"
+			} else {
+				game.gameOverMessage = "YOU WIN"
+			}
 		}
 	}
 	return nil
@@ -119,7 +146,7 @@ func (game *mainGame) Draw(screen *ebiten.Image) {
 	textFace := text.NewGoXFace(game.font)
 	if game.state == gameStateStart {
 		game.ui.Draw(screen)
-	} else {
+	} else if game.state == gameStatePlay {
 		game.displayWorld.DrawImage(game.stageManager.currentStage.drawableStage, game.drawOps)
 		game.drawOps.GeoM.Reset()
 		game.drawOps.GeoM.Translate(float64(game.base.x), float64(game.base.y))
@@ -135,7 +162,6 @@ func (game *mainGame) Draw(screen *ebiten.Image) {
 		game.enemySpawner.drawEnemies(game.displayWorld, game.drawOps)
 		game.projManager.DrawProjectiles(game.displayWorld, game.drawOps)
 		game.textOps.GeoM.Translate(float64(game.base.x), float64(game.base.y-20))
-		game.textOps.ColorScale.ScaleWithColor(colornames.White)
 		text.Draw(game.displayWorld, game.base.name, textFace, game.textOps)
 		game.textOps.ColorScale.Reset()
 		game.textOps.GeoM.Reset()
@@ -143,7 +169,22 @@ func (game *mainGame) Draw(screen *ebiten.Image) {
 		game.cameraView.Follow.W = game.viewX * 2
 		game.cameraView.Draw(game.displayWorld, screen)
 		game.bank.drawCurrentGoldText(screen, game.textOps, game.font)
+		if game.message != "" {
+			game.textOps.GeoM.Translate(350.0, 200.0)
+			text.Draw(screen, game.message, textFace, game.textOps)
+			game.textOps.GeoM.Reset()
+		}
 		game.drawOps.GeoM.Reset()
+	} else if game.state == gameOver {
+		game.textOps.GeoM.Translate(350.0, 350.0)
+		if game.gameOverMessage == "GAME OVER" {
+			game.textOps.ColorScale.ScaleWithColor(colornames.Red)
+		} else {
+			game.textOps.ColorScale.ScaleWithColor(colornames.Green)
+		}
+		text.Draw(screen, game.gameOverMessage, textFace, game.textOps)
+		game.textOps.ColorScale.Reset()
+		game.textOps.GeoM.Reset()
 	}
 }
 
@@ -172,9 +213,10 @@ func main() {
 			goToNextStage: true,
 			index:         0,
 		},
-		drawOps: &ebiten.DrawImageOptions{},
-		textOps: &text.DrawOptions{},
-		font:    LoadFont("Square-Black.ttf", 30),
+		stageTransitionDelay: 300,
+		drawOps:              &ebiten.DrawImageOptions{},
+		textOps:              &text.DrawOptions{},
+		font:                 LoadFont("Square-Black.ttf", 30),
 		bank: goldCounter{
 			gold: 0, x: WINDOW_WIDTH / 2, y: 10, color: colornames.Gold,
 		},
@@ -182,6 +224,7 @@ func main() {
 	game.stageManager.buildDrawableStages()
 	if game.stageManager.goToNextStage {
 		game.stageManager.rebuildGameForStage(&game)
+		fmt.Println(game.stageManager.currentStage.stageWaves.length)
 	}
 	game.ui = &ebitenui.UI{Container: makeUI(&game)}
 	err := ebiten.RunGame(&game)
