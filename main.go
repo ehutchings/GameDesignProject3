@@ -169,6 +169,11 @@ func (game *mainGame) Draw(screen *ebiten.Image) {
 		game.cameraView.Follow.W = game.viewX * 2
 		game.cameraView.Draw(game.displayWorld, screen)
 		game.bank.drawCurrentGoldText(screen, game.textOps, game.font)
+		game.textOps.GeoM.Translate(WINDOW_WIDTH/2, 700.0)
+		game.textOps.ColorScale.ScaleWithColor(colornames.Red)
+		text.Draw(screen, "Health: "+strconv.Itoa(game.base.health), textFace, game.textOps)
+		game.textOps.GeoM.Reset()
+		game.textOps.ColorScale.Reset()
 		if game.message != "" {
 			game.textOps.GeoM.Translate(350.0, 200.0)
 			text.Draw(screen, game.message, textFace, game.textOps)

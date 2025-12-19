@@ -19,7 +19,7 @@ func (counter *goldCounter) drawCurrentGoldText(screen *ebiten.Image, textOps *t
 	textFace := text.NewGoXFace(face)
 	textOps.GeoM.Translate(float64(counter.x), float64(counter.y))
 	textOps.ColorScale.ScaleWithColor(counter.color)
-	text.Draw(screen, strconv.Itoa(counter.gold), textFace, textOps)
+	text.Draw(screen, "Gold: "+strconv.Itoa(counter.gold), textFace, textOps)
 	textOps.ColorScale.Reset()
 	textOps.GeoM.Reset()
 }

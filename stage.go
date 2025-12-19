@@ -83,7 +83,7 @@ func getStages() []*stage {
 		playerBaseX:   24 * TILE_WIDTH,
 		playerBaseY:   20 * TILE_HEIGHT,
 	}
-	stage1.stageWaves = newWavesForStage(60, 1, 1)
+	stage1.stageWaves = newWavesForStage(60, 2, 5)
 	stage2 := stage{
 		stageMap:      nil,
 		drawableStage: nil,
@@ -94,7 +94,7 @@ func getStages() []*stage {
 		playerBaseX:   23 * TILE_WIDTH,
 		playerBaseY:   3 * TILE_HEIGHT,
 	}
-	stage2.stageWaves = newWavesForStage(30, 1, 1)
+	stage2.stageWaves = newWavesForStage(60, 2, 10)
 	stage3 := stage{
 		stageMap:      nil,
 		drawableStage: nil,
@@ -105,6 +105,6 @@ func getStages() []*stage {
 		playerBaseX:   18 * TILE_WIDTH,
 		playerBaseY:   10 * TILE_HEIGHT,
 	}
-	stage3.stageWaves = newWavesForStage(30, 3, 1)
+	stage3.stageWaves = newWavesForStage(30, 3, 20)
 	return []*stage{&stage1, &stage2, &stage3}
 }

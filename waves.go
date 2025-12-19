@@ -31,6 +31,10 @@ func newWave(spawnInterval int, length int) *wave {
 		newEnemy := newRegularEnemy(0, 0)
 		if index%3 == 0 {
 			newEnemy = newFastEnemy(0, 0)
+		} else if index%5 == 0 {
+			newEnemy = newStrongRegularEnemy(0, 0)
+		} else if index%7 == 0 {
+			newEnemy = newStrongFastEnemy(0, 0)
 		}
 		newWave.enemies = append(newWave.enemies, *newEnemy)
 	}
