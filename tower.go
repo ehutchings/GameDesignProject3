@@ -72,6 +72,7 @@ func (tower *tower) getTarget(enemies []*enemy) {
 		if tower.rangeCollider.DistanceTo(currentEnemy.collider) < tower.rangeRadius {
 			if currentEnemy.distanceTravelled > highestDistanceTravelled {
 				tower.targetEnemy = currentEnemy
+				highestDistanceTravelled = currentEnemy.distanceTravelled
 			}
 		}
 	}
