@@ -247,7 +247,6 @@ func main() {
 	game.stageManager.buildDrawableStages()
 	if game.stageManager.goToNextStage {
 		game.stageManager.rebuildGameForStage(&game)
-		fmt.Println(game.stageManager.currentStage.stageWaves.length)
 	}
 	game.ui = &ebitenui.UI{Container: makeUI(&game)}
 	err := ebiten.RunGame(&game)
