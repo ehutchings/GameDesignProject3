@@ -18,7 +18,7 @@ func buildTowerOnClick(game *mainGame) {
 	if selectedGrid != nil && selectedGrid.canBuild == true {
 		selectedGrid.cell.Walkable = false
 		if game.gameCursor.selectedTower == snowflake {
-			if canEnemyPath(game) && game.bank.gold >= game.baseCost*4 {
+			if canEnemyPath(game) && game.bank.gold >= game.baseCost*2 {
 				newTower := newSnowflakeTower(selectedGrid.x, selectedGrid.y, int(game.setDifficulty+1))
 				selectedGrid.tower = &newTower
 				selectedGrid.canBuild = false
@@ -29,12 +29,12 @@ func buildTowerOnClick(game *mainGame) {
 				selectedGrid.cell.Walkable = true
 			}
 		} else if game.gameCursor.selectedTower == infernalEye {
-			if canEnemyPath(game) && game.bank.gold >= game.baseCost*2 {
+			if canEnemyPath(game) && game.bank.gold >= int(float64(game.baseCost)*1.5) {
 				newTower := newInfernalEyeTower(selectedGrid.x, selectedGrid.y, int(game.setDifficulty+1))
 				selectedGrid.tower = &newTower
 				selectedGrid.canBuild = false
 				game.towers = append(game.towers, selectedGrid.tower)
-				game.bank.gold -= game.baseCost * 2
+				game.bank.gold -= int(float64(game.baseCost) * 1.5)
 				redrawEnemyPaths(game, game.enemySpawner.activeEnemies)
 			} else {
 				selectedGrid.cell.Walkable = true
@@ -51,7 +51,7 @@ func buildTowerOnClick(game *mainGame) {
 				selectedGrid.cell.Walkable = true
 			}
 		} else if game.gameCursor.selectedTower == voidLauncher {
-			if canEnemyPath(game) && game.bank.gold >= game.baseCost*6 {
+			if canEnemyPath(game) && game.bank.gold >= game.baseCost*3 {
 				newTower := newVoidLauncherTower(selectedGrid.x, selectedGrid.y, int(game.setDifficulty+1))
 				selectedGrid.tower = &newTower
 				selectedGrid.canBuild = false

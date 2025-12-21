@@ -1,6 +1,8 @@
 package main
 
 import (
+	"math"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/solarlune/resolv"
 )
@@ -31,6 +33,7 @@ type projectile struct {
 	effect                 *effect
 	targetEnemy            *enemy
 	AreaOfEffectRadius     float64
+	rotDirection           float64
 }
 
 type projectileManager struct {
@@ -67,15 +70,21 @@ func (projectile *projectile) Update(enemies []*enemy) {
 }
 
 func (projectile *projectile) updatePosition() {
+	projectile.xDirection = float64(projectile.targetX - projectile.x)
+	projectile.yDirection = float64(projectile.targetY - projectile.y)
+	magnitude := math.Sqrt(math.Pow(projectile.xDirection, 2) + math.Pow(projectile.yDirection, 2))
+	projectile.xDirection = projectile.xDirection / magnitude
+	projectile.yDirection = projectile.yDirection / magnitude
+
 	if projectile.x < projectile.targetX {
-		projectile.x += projectile.speed
+		projectile.x += int(float64(projectile.speed) * projectile.xDirection)
 	} else if projectile.x > projectile.targetX {
-		projectile.x -= projectile.speed
+		projectile.x -= int(float64(projectile.speed) * -projectile.xDirection)
 	}
 	if projectile.y < projectile.targetY {
-		projectile.y += projectile.speed
+		projectile.y += int(float64(projectile.speed) * projectile.yDirection)
 	} else if projectile.y > projectile.targetY {
-		projectile.y -= projectile.speed
+		projectile.y -= int(float64(projectile.speed) * -projectile.yDirection)
 	}
 }
 
@@ -92,6 +101,8 @@ func (projectile *projectile) isOnTarget() bool {
 
 func (projectile *projectile) Draw(screen *ebiten.Image, drawOps *ebiten.DrawImageOptions) {
 	if projectile.sprite != nil {
+		drawOps.GeoM.Translate(float64(-projectile.sprite.Bounds().Dx()/2), float64(-projectile.sprite.Bounds().Dy()/2))
+		drawOps.GeoM.Rotate(projectile.rotDirection)
 		drawOps.GeoM.Translate(float64(projectile.x), float64(projectile.y))
 		screen.DrawImage(projectile.sprite, drawOps)
 		drawOps.GeoM.Reset()

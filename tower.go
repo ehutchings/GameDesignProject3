@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/solarlune/resolv"
@@ -27,11 +28,19 @@ type tower struct {
 	frameLength, currentFrame int
 	rangeCollider             *resolv.Circle
 	targetEnemy               *enemy
+	direction                 float64
 }
 
 func (tower *tower) Update(enemies []*enemy, projectileManager *projectileManager, audioManager *audioManager) {
 	tower.getTarget(enemies)
 	if tower.targetEnemy != nil {
+		x1 := float64(tower.x + TILE_WIDTH/2)
+		y1 := float64(tower.y + TILE_HEIGHT/2)
+		x2 := float64(tower.targetEnemy.x + TILE_WIDTH/2)
+		y2 := float64(tower.targetEnemy.y + TILE_HEIGHT/2)
+		//dot := x1*x2 + y1*y2
+		//det := x1*y2 - y1*x2
+		tower.direction = math.Atan2(y1-y2, x1-x2) + math.Pi/2
 		tower.firing = true
 		tower.cooldown -= 1
 		if tower.cooldown%(tower.firingDelay/tower.frameLength) == 0 {
@@ -58,7 +67,13 @@ func (tower *tower) Update(enemies []*enemy, projectileManager *projectileManage
 }
 
 func (tower *tower) Draw(drawOps *ebiten.DrawImageOptions, screen *ebiten.Image) {
-	drawOps.GeoM.Translate(float64(tower.x), float64(tower.y))
+	if tower.typeOfTower != snowflake {
+		drawOps.GeoM.Translate(-TILE_WIDTH/2, -TILE_HEIGHT/2)
+		drawOps.GeoM.Rotate(tower.direction)
+		drawOps.GeoM.Translate(float64(tower.x+TILE_WIDTH/2), float64(tower.y+TILE_WIDTH/2))
+	} else {
+		drawOps.GeoM.Translate(float64(tower.x), float64(tower.y))
+	}
 	frame := tower.currentFrame * TILE_WIDTH
 	screen.DrawImage(tower.spritesheet.SubImage(image.Rect(frame, 0,
 		frame+TILE_WIDTH, TILE_HEIGHT)).(*ebiten.Image), drawOps)
@@ -86,7 +101,7 @@ func newCrossbowTower(x, y, damageMod int) tower {
 		spritesheet:   sheet,
 		x:             x,
 		y:             y,
-		baseDamage:    12 * damageMod,
+		baseDamage:    15 * damageMod,
 		rangeRadius:   radius,
 		firing:        false,
 		firingDelay:   60,
@@ -105,7 +120,7 @@ func newVoidLauncherTower(x, y, damageMod int) tower {
 		spritesheet:   sheet,
 		x:             x,
 		y:             y,
-		baseDamage:    8 * damageMod,
+		baseDamage:    35 * damageMod,
 		rangeRadius:   radius,
 		firing:        false,
 		firingDelay:   120,
@@ -124,7 +139,7 @@ func newInfernalEyeTower(x, y, damageMod int) tower {
 		spritesheet:   sheet,
 		x:             x,
 		y:             y,
-		baseDamage:    2 * damageMod,
+		baseDamage:    3 * damageMod,
 		rangeRadius:   radius,
 		firing:        false,
 		firingDelay:   20,
@@ -143,7 +158,7 @@ func newSnowflakeTower(x, y, damageMod int) tower {
 		spritesheet:   sheet,
 		x:             x,
 		y:             y,
-		baseDamage:    2 * damageMod,
+		baseDamage:    10 * damageMod,
 		rangeRadius:   radius,
 		firing:        false,
 		firingDelay:   30,
@@ -160,6 +175,7 @@ func (tower *tower) fireProjectile(projManager *projectileManager, targetX, targ
 		newProjectile := projectile{
 			x:               tower.x + TILE_WIDTH/2,
 			y:               tower.y + TILE_HEIGHT/2,
+			rotDirection:    tower.direction,
 			targetEnemy:     tower.targetEnemy,
 			targetX:         targetX,
 			targetY:         targetY,
@@ -177,6 +193,7 @@ func (tower *tower) fireProjectile(projManager *projectileManager, targetX, targ
 		newProjectile := projectile{
 			x:               tower.x + TILE_WIDTH/2,
 			y:               tower.y + TILE_HEIGHT/2,
+			rotDirection:    tower.direction,
 			targetEnemy:     tower.targetEnemy,
 			targetX:         targetX,
 			targetY:         targetY,
@@ -187,7 +204,7 @@ func (tower *tower) fireProjectile(projManager *projectileManager, targetX, targ
 			speed:           10,
 			effect: &effect{
 				typeOfEffect: stun,
-				duration:     30,
+				duration:     45,
 				strength:     0,
 			},
 			AreaOfEffectRadius: 128,
@@ -199,6 +216,7 @@ func (tower *tower) fireProjectile(projManager *projectileManager, targetX, targ
 		newProjectile := projectile{
 			x:               tower.x + TILE_WIDTH/2,
 			y:               tower.y + TILE_HEIGHT/2,
+			rotDirection:    tower.direction,
 			targetEnemy:     tower.targetEnemy,
 			targetX:         targetX,
 			targetY:         targetY,
@@ -209,8 +227,8 @@ func (tower *tower) fireProjectile(projManager *projectileManager, targetX, targ
 			speed:           15,
 			effect: &effect{
 				typeOfEffect: burn,
-				duration:     60,
-				interval:     20,
+				duration:     90,
+				interval:     15,
 				strength:     1,
 			},
 		}

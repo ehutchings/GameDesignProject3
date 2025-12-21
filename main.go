@@ -41,7 +41,7 @@ const (
 
 	BASE_HEALTH = 100
 
-	STARTING_GOLD   = 50
+	STARTING_GOLD   = 75
 	SoundSampleRate = 48000
 )
 
