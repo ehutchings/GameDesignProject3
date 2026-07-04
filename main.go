@@ -69,6 +69,7 @@ type mainGame struct {
 	gameOverMessage                  string
 	message                          string
 	ui                               *ebitenui.UI
+	bottomBarUI                      *ebitenui.UI
 	gameCursor                       cursor
 	mapGrid                          grid
 	towers                           []*tower
@@ -91,6 +92,7 @@ func (game *mainGame) Update() error {
 	if game.state == gameStateStart {
 		game.ui.Update()
 	} else if game.state == gameStatePlay {
+		//game.bottomBarUI.Update()
 		game.gameCursor.selectTowerType()
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 			buildTowerOnClick(game)
@@ -188,6 +190,7 @@ func (game *mainGame) Draw(screen *ebiten.Image) {
 			game.textOps.GeoM.Reset()
 		}
 		game.drawOps.GeoM.Reset()
+		//game.bottomBarUI.Draw(screen)
 	} else if game.state == gameOver {
 		game.textOps.GeoM.Translate(350.0, 350.0)
 		if game.gameOverMessage == "GAME OVER" {
@@ -208,7 +211,7 @@ func (game *mainGame) Layout(outsideWidth, outsideHeight int) (int, int) {
 func main() {
 	soundContext := audio.NewContext(SoundSampleRate)
 	pathMap := paths.NewGrid(25, 25, TILE_WIDTH, TILE_HEIGHT)
-	ebiten.SetWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT)
+	ebiten.SetWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT+120)
 	displayWorld := ebiten.NewImage(MAP_SIZE_X, MAP_SIZE_Y)
 	game := mainGame{
 		audioContext: soundContext,
@@ -249,6 +252,7 @@ func main() {
 		game.stageManager.rebuildGameForStage(&game)
 	}
 	game.ui = &ebitenui.UI{Container: makeUI(&game)}
+	//game.bottomBarUI = &ebitenui.UI{Container: makeBottomBarUI(&game)}
 	err := ebiten.RunGame(&game)
 	if err != nil {
 		fmt.Println("Couldn't run game:", err)

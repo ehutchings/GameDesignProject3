@@ -38,7 +38,7 @@ type stage struct {
 }
 
 func (stage *stage) buildDrawableStage() {
-	stageMap, _ := tiled.LoadFile(stageNumberToPath(stage.number))
+	stageMap := LoadEmbeddedTileMap(stageNumberToPath(stage.number))
 	stage.stageMap = stageMap
 	stageImage := makeEbiteImagesFromMap(*stage.stageMap)
 	stage.stageTileHash = stageImage
@@ -83,7 +83,7 @@ func getStages() []*stage {
 		playerBaseX:   24 * TILE_WIDTH,
 		playerBaseY:   20 * TILE_HEIGHT,
 	}
-	stage1.stageWaves = newWavesForStage(60, 2, 7)
+	stage1.stageWaves = newWavesForStage([]int{60, 50}, 2, []int{10, 20})
 	stage2 := stage{
 		stageMap:      nil,
 		drawableStage: nil,
@@ -94,7 +94,7 @@ func getStages() []*stage {
 		playerBaseX:   23 * TILE_WIDTH,
 		playerBaseY:   3 * TILE_HEIGHT,
 	}
-	stage2.stageWaves = newWavesForStage(60, 2, 20)
+	stage2.stageWaves = newWavesForStage([]int{60, 45}, 2, []int{20, 30})
 	stage3 := stage{
 		stageMap:      nil,
 		drawableStage: nil,
@@ -105,6 +105,6 @@ func getStages() []*stage {
 		playerBaseX:   18 * TILE_WIDTH,
 		playerBaseY:   10 * TILE_HEIGHT,
 	}
-	stage3.stageWaves = newWavesForStage(30, 3, 30)
+	stage3.stageWaves = newWavesForStage([]int{40, 30, 30}, 3, []int{25, 40, 60})
 	return []*stage{&stage1, &stage2, &stage3}
 }

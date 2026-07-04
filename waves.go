@@ -11,13 +11,13 @@ type wave struct {
 	length        int
 }
 
-func newWavesForStage(spawnInterval int, stageLength int, waveLength int) *stageWaves {
+func newWavesForStage(spawnIntervals []int, stageLength int, waveLengths []int) *stageWaves {
 	newWaves := &stageWaves{
 		waves:  make([]*wave, stageLength),
 		length: stageLength,
 	}
 	for i := 0; i < stageLength; i++ {
-		newWaves.waves[i] = newWave(spawnInterval, waveLength)
+		newWaves.waves[i] = newWave(spawnIntervals[i], waveLengths[i])
 	}
 	return newWaves
 }

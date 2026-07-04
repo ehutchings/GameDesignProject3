@@ -77,3 +77,12 @@ func LoadEmbeddedWav(name string, context *audio.Context) *audio.Player {
 	}
 	return soundPlayer
 }
+
+func LoadEmbeddedTileMap(name string) *tiled.Map {
+	loaderOption := tiled.WithFileSystem(EmbeddedAssets)
+	tileMap, err := tiled.LoadFile(path.Join("assets", "TileMaps", name), loaderOption)
+	if err != nil {
+		fmt.Println("Error loading tile map: ", name, err)
+	}
+	return tileMap
+}

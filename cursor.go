@@ -18,50 +18,66 @@ func buildTowerOnClick(game *mainGame) {
 	if selectedGrid != nil && selectedGrid.canBuild == true {
 		selectedGrid.cell.Walkable = false
 		if game.gameCursor.selectedTower == snowflake {
-			if canEnemyPath(game) && game.bank.gold >= game.baseCost*2 {
-				newTower := newSnowflakeTower(selectedGrid.x, selectedGrid.y, int(game.setDifficulty+1))
-				selectedGrid.tower = &newTower
-				selectedGrid.canBuild = false
-				game.towers = append(game.towers, selectedGrid.tower)
-				game.bank.gold -= game.baseCost * 4
-				redrawEnemyPaths(game, game.enemySpawner.activeEnemies)
-			} else {
-				selectedGrid.cell.Walkable = true
-			}
+			buySnowflake(game, selectedGrid)
 		} else if game.gameCursor.selectedTower == infernalEye {
-			if canEnemyPath(game) && game.bank.gold >= int(float64(game.baseCost)*1.5) {
-				newTower := newInfernalEyeTower(selectedGrid.x, selectedGrid.y, int(game.setDifficulty+1))
-				selectedGrid.tower = &newTower
-				selectedGrid.canBuild = false
-				game.towers = append(game.towers, selectedGrid.tower)
-				game.bank.gold -= int(float64(game.baseCost) * 1.5)
-				redrawEnemyPaths(game, game.enemySpawner.activeEnemies)
-			} else {
-				selectedGrid.cell.Walkable = true
-			}
+			buyInfernalEye(game, selectedGrid)
 		} else if game.gameCursor.selectedTower == crossbow {
-			if canEnemyPath(game) && game.bank.gold >= game.baseCost {
-				newTower := newCrossbowTower(selectedGrid.x, selectedGrid.y, int(game.setDifficulty+1))
-				selectedGrid.tower = &newTower
-				selectedGrid.canBuild = false
-				game.towers = append(game.towers, selectedGrid.tower)
-				game.bank.gold -= game.baseCost
-				redrawEnemyPaths(game, game.enemySpawner.activeEnemies)
-			} else {
-				selectedGrid.cell.Walkable = true
-			}
+			buyCrossbow(game, selectedGrid)
 		} else if game.gameCursor.selectedTower == voidLauncher {
-			if canEnemyPath(game) && game.bank.gold >= game.baseCost*3 {
-				newTower := newVoidLauncherTower(selectedGrid.x, selectedGrid.y, int(game.setDifficulty+1))
-				selectedGrid.tower = &newTower
-				selectedGrid.canBuild = false
-				game.towers = append(game.towers, selectedGrid.tower)
-				game.bank.gold -= game.baseCost * 6
-				redrawEnemyPaths(game, game.enemySpawner.activeEnemies)
-			} else {
-				selectedGrid.cell.Walkable = true
-			}
+			buyVoidLauncher(game, selectedGrid)
 		}
+	}
+}
+
+func buyCrossbow(game *mainGame, selectedGrid *gridBox) {
+	if canEnemyPath(game) && game.bank.gold >= game.baseCost {
+		newTower := newCrossbowTower(selectedGrid.x, selectedGrid.y, int(game.setDifficulty+1))
+		selectedGrid.tower = &newTower
+		selectedGrid.canBuild = false
+		game.towers = append(game.towers, selectedGrid.tower)
+		game.bank.gold -= game.baseCost
+		redrawEnemyPaths(game, game.enemySpawner.activeEnemies)
+	} else {
+		selectedGrid.cell.Walkable = true
+	}
+}
+
+func buySnowflake(game *mainGame, selectedGrid *gridBox) {
+	if canEnemyPath(game) && game.bank.gold >= game.baseCost*2 {
+		newTower := newSnowflakeTower(selectedGrid.x, selectedGrid.y, int(game.setDifficulty+1))
+		selectedGrid.tower = &newTower
+		selectedGrid.canBuild = false
+		game.towers = append(game.towers, selectedGrid.tower)
+		game.bank.gold -= game.baseCost * 2
+		redrawEnemyPaths(game, game.enemySpawner.activeEnemies)
+	} else {
+		selectedGrid.cell.Walkable = true
+	}
+}
+
+func buyInfernalEye(game *mainGame, selectedGrid *gridBox) {
+	if canEnemyPath(game) && game.bank.gold >= int(float64(game.baseCost)*1.5) {
+		newTower := newInfernalEyeTower(selectedGrid.x, selectedGrid.y, int(game.setDifficulty+1))
+		selectedGrid.tower = &newTower
+		selectedGrid.canBuild = false
+		game.towers = append(game.towers, selectedGrid.tower)
+		game.bank.gold -= int(float64(game.baseCost) * 1.5)
+		redrawEnemyPaths(game, game.enemySpawner.activeEnemies)
+	} else {
+		selectedGrid.cell.Walkable = true
+	}
+}
+
+func buyVoidLauncher(game *mainGame, selectedGrid *gridBox) {
+	if canEnemyPath(game) && game.bank.gold >= game.baseCost*3 {
+		newTower := newVoidLauncherTower(selectedGrid.x, selectedGrid.y, int(game.setDifficulty+1))
+		selectedGrid.tower = &newTower
+		selectedGrid.canBuild = false
+		game.towers = append(game.towers, selectedGrid.tower)
+		game.bank.gold -= game.baseCost * 3
+		redrawEnemyPaths(game, game.enemySpawner.activeEnemies)
+	} else {
+		selectedGrid.cell.Walkable = true
 	}
 }
 

@@ -158,7 +158,7 @@ func newSnowflakeTower(x, y, damageMod int) tower {
 		spritesheet:   sheet,
 		x:             x,
 		y:             y,
-		baseDamage:    10 * damageMod,
+		baseDamage:    4 * damageMod,
 		rangeRadius:   radius,
 		firing:        false,
 		firingDelay:   30,
