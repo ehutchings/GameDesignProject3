@@ -39,8 +39,8 @@ Things I wanted to finish but did not:
 Layered tile maps - I was not able to make layered tile maps work, but I was still able to add the   
 functionality of certain tiles blocking enemies and tower placements.
   
-Realistic projectiles and rotating projectile sprites and tower sprites to face the target enemy -  I am not familiar  
-with the math to do these things. I used a few shortcuts to make the projectiles aim somewhat towards the enemy's  
+Realistic projectiles -  I am not familiar  with the math to do these things. I used a few shortcuts 
+to make the projectiles aim somewhat towards the enemy's  
 position rather than using realistic shooting and collisions.
 
 An interface showing the list of possible towers, which one is selected, and each tower's cost.
