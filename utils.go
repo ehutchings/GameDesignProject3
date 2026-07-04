@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"path"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -16,8 +15,8 @@ import (
 	"golang.org/x/image/font/opentype"
 )
 
-func LoadFont(fontFile string, size float64) font.Face {
-	fileHandle, err := os.Open(fontFile)
+func LoadEmbeddedFont(fontFile string, size float64) font.Face {
+	fileHandle, err := EmbeddedAssets.Open(path.Join("assets", "Fonts", fontFile))
 	if err != nil {
 		log.Fatal(err)
 	}

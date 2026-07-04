@@ -242,7 +242,7 @@ func main() {
 		stageTransitionDelay: 300,
 		drawOps:              &ebiten.DrawImageOptions{},
 		textOps:              &text.DrawOptions{},
-		font:                 LoadFont("Square-Black.ttf", 30),
+		font:                 LoadEmbeddedFont("Square-Black.ttf", 30),
 		bank: goldCounter{
 			gold: 0, x: WINDOW_WIDTH / 2, y: 10, color: colornames.Gold,
 		},
