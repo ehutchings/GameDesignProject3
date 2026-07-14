@@ -13,18 +13,20 @@ type cursor struct {
 func buildTowerOnClick(game *mainGame) {
 	cursorX, cursorY := ebiten.CursorPosition()
 	game.gameCursor.x, game.gameCursor.y = cursorX+game.viewX-WINDOW_WIDTH/2, cursorY+game.viewY-WINDOW_HEIGHT/2
-	game.mapGrid.getGridBoxAtCursor(&game.gameCursor)
-	selectedGrid := game.gameCursor.selectedBox
-	if selectedGrid != nil && selectedGrid.canBuild == true {
-		selectedGrid.cell.Walkable = false
-		if game.gameCursor.selectedTower == snowflake {
-			buySnowflake(game, selectedGrid)
-		} else if game.gameCursor.selectedTower == infernalEye {
-			buyInfernalEye(game, selectedGrid)
-		} else if game.gameCursor.selectedTower == crossbow {
-			buyCrossbow(game, selectedGrid)
-		} else if game.gameCursor.selectedTower == voidLauncher {
-			buyVoidLauncher(game, selectedGrid)
+	if cursorY < WINDOW_HEIGHT-BOTTOM_BAR_HEIGHT {
+		game.mapGrid.getGridBoxAtCursor(&game.gameCursor)
+		selectedGrid := game.gameCursor.selectedBox
+		if selectedGrid != nil && selectedGrid.canBuild == true {
+			selectedGrid.cell.Walkable = false
+			if game.gameCursor.selectedTower == snowflake {
+				buySnowflake(game, selectedGrid)
+			} else if game.gameCursor.selectedTower == infernalEye {
+				buyInfernalEye(game, selectedGrid)
+			} else if game.gameCursor.selectedTower == crossbow {
+				buyCrossbow(game, selectedGrid)
+			} else if game.gameCursor.selectedTower == voidLauncher {
+				buyVoidLauncher(game, selectedGrid)
+			}
 		}
 	}
 }
