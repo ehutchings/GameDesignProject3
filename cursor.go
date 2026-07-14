@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 type cursor struct {
@@ -11,6 +12,9 @@ type cursor struct {
 }
 
 func buildTowerOnClick(game *mainGame) {
+	if game.gameCursor.selectedTower == empty {
+		return
+	}
 	cursorX, cursorY := ebiten.CursorPosition()
 	game.gameCursor.x, game.gameCursor.y = cursorX+game.viewX-WINDOW_WIDTH/2, cursorY+game.viewY-WINDOW_HEIGHT/2
 	if cursorY < WINDOW_HEIGHT-BOTTOM_BAR_HEIGHT {
@@ -83,17 +87,37 @@ func buyVoidLauncher(game *mainGame, selectedGrid *gridBox) {
 	}
 }
 
-func (cursor *cursor) selectTowerType() {
-	if ebiten.IsKeyPressed(ebiten.KeyX) {
-		cursor.selectedTower = crossbow
+func (cursor *cursor) selectTowerType(game *mainGame) {
+	if inpututil.IsKeyJustPressed(ebiten.KeyX) {
+		crossbowButton := game.bottomBarButtons[0]
+		if crossbowButton.State() == 1 {
+			crossbowButton.SetState(0)
+		} else {
+			crossbowButton.SetState(1)
+		}
 	}
-	if ebiten.IsKeyPressed(ebiten.KeyC) {
-		cursor.selectedTower = voidLauncher
+	if inpututil.IsKeyJustPressed(ebiten.KeyC) {
+		infernalEyeButton := game.bottomBarButtons[1]
+		if infernalEyeButton.State() == 1 {
+			infernalEyeButton.SetState(0)
+		} else {
+			infernalEyeButton.SetState(1)
+		}
 	}
-	if ebiten.IsKeyPressed(ebiten.KeyV) {
-		cursor.selectedTower = infernalEye
+	if inpututil.IsKeyJustPressed(ebiten.KeyV) {
+		snowflakeButton := game.bottomBarButtons[2]
+		if snowflakeButton.State() == 1 {
+			snowflakeButton.SetState(0)
+		} else {
+			snowflakeButton.SetState(1)
+		}
 	}
-	if ebiten.IsKeyPressed(ebiten.KeyB) {
-		cursor.selectedTower = snowflake
+	if inpututil.IsKeyJustPressed(ebiten.KeyB) {
+		voidLauncherButton := game.bottomBarButtons[3]
+		if voidLauncherButton.State() == 1 {
+			voidLauncherButton.SetState(0)
+		} else {
+			voidLauncherButton.SetState(1)
+		}
 	}
 }

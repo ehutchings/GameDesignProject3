@@ -11,7 +11,8 @@ import (
 type towerType int
 
 const (
-	crossbow = towerType(iota)
+	empty = towerType(iota)
+	crossbow
 	voidLauncher
 	infernalEye
 	snowflake

@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/ebitenui/ebitenui"
+	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -70,6 +71,7 @@ type mainGame struct {
 	message                          string
 	ui                               *ebitenui.UI
 	bottomBarUI                      *ebitenui.UI
+	bottomBarButtons                 []*widget.Checkbox
 	gameCursor                       cursor
 	mapGrid                          grid
 	towers                           []*tower
@@ -93,7 +95,7 @@ func (game *mainGame) Update() error {
 		game.ui.Update()
 	} else if game.state == gameStatePlay {
 		game.bottomBarUI.Update()
-		game.gameCursor.selectTowerType()
+		game.gameCursor.selectTowerType(game)
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 			buildTowerOnClick(game)
 		}
@@ -225,7 +227,7 @@ func main() {
 			victorySoundPlayer:      LoadEmbeddedWav("Win.wav", soundContext),
 			defeatSoundPlayer:       LoadEmbeddedWav("Lose.wav", soundContext),
 		},
-		gameCursor:   cursor{selectedBox: nil},
+		gameCursor:   cursor{selectedBox: nil, selectedTower: empty},
 		pathMap:      pathMap,
 		towers:       []*tower{},
 		projManager:  projectileManager{make([]projectile, 0)},
